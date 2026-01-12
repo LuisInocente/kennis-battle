@@ -32,6 +32,7 @@ body{
   transform:translateX(-50%);
   font-size:22px;
   font-weight:950;
+  letter-spacing:.2px;
   z-index:3000;
   pointer-events:none;
 }
@@ -63,11 +64,15 @@ body{
 
 .topRow{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:1fr 1fr; /* status pill removed */
+  align-items:center;
   gap:8px;
 }
 
 .teamCard{
+  border:none;
+  background:transparent;
+  padding:4px 6px;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -76,68 +81,147 @@ body{
 
 .nameInput{
   width:140px;
+  max-width:42vw;
   text-align:center;
   font-weight:1000;
   font-size:13px;
-  border:1px solid rgba(0,0,0,.1);
+  border:1px solid rgba(0,0,0,.10);
   border-radius:12px;
   padding:6px 8px;
+  outline:none;
+  user-select:text;
+  background:#fff;
+  transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
 }
-.teamCard.A .nameInput{color:var(--A)}
-.teamCard.B .nameInput{color:var(--B)}
+.teamCard.A .nameInput{ color:var(--A); }
+.teamCard.B .nameInput{ color:var(--B); }
 
-.score{
+.teamCard .score{
   font-size:26px;
   font-weight:1000;
+  line-height:1;
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.08);
+  background:#fff;
 }
 
-.teamCard.active .nameInput{
-  box-shadow:0 0 0 4px rgba(0,0,0,.15);
+.teamCard.A.active .nameInput{
+  border-color: rgba(79,124,255,.55);
+  box-shadow: 0 0 0 5px rgba(79,124,255,.22);
+  transform: scale(1.03);
+}
+.teamCard.B.active .nameInput{
+  border-color: rgba(239,68,68,.55);
+  box-shadow: 0 0 0 5px rgba(239,68,68,.20);
+  transform: scale(1.03);
 }
 
 .main{
   display:grid;
   grid-template-rows:auto auto auto;
   gap:10px;
+  min-height:0;
+  align-items:stretch;
+}
+
+.videoStage{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:8px;
+  min-height:0;
 }
 
 .videoBox{
-  width:min(640px,100%);
+  width:min(640px, 100%);
   aspect-ratio:16/9;
-  background:#000;
+  max-height:44vh;
   border-radius:16px;
   overflow:hidden;
-  position:relative;
+  background:#000;
   box-shadow:var(--shadow);
+  position:relative;
 }
-#playerHost{position:absolute;inset:0}
+#playerHost{ position:absolute; inset:0; }
+.videoBox iframe{
+  width:100%;
+  height:100%;
+  border:0;
+  display:block;
+  pointer-events:none;
+}
 
 .playOverlay{
   position:absolute;
   inset:0;
   display:grid;
   place-items:center;
-  background:rgba(0,0,0,.25);
+  background:linear-gradient(to bottom, rgba(0,0,0,.10), rgba(0,0,0,.28));
+  z-index:5;
 }
 .playBtn{
+  border:0;
+  cursor:pointer;
   padding:14px 18px;
   border-radius:16px;
-  border:0;
   font-weight:1000;
-  cursor:pointer;
+  font-size:16px;
+  background:#fff;
+  box-shadow:0 16px 40px rgba(0,0,0,.25);
+  display:flex;
+  align-items:center;
+  gap:10px;
 }
+.playIcon{
+  width:0;height:0;
+  border-top:9px solid transparent;
+  border-bottom:9px solid transparent;
+  border-left:14px solid #111;
+}
+
+.videoControls{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+.ctrlBtn{
+  padding:8px 12px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:#fff;
+  font-weight:950;
+  cursor:pointer;
+  font-size:13px;
+}
+.ctrlBtn.primary{ background:#111; color:#fff; border-color:transparent}
+.ctrlBtn:disabled{ opacity:.45; cursor:not-allowed; }
 
 .qa{
   border:1px solid var(--border);
   border-radius:14px;
   padding:10px;
   display:grid;
+  grid-template-rows:auto 1fr;
   gap:8px;
+  min-height:0;
+  background:#fff;
 }
-
 .question{
   text-align:center;
+  font-size:16px;
   font-weight:1000;
+  line-height:1.2;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:6px 4px;
+  border:1px solid rgba(0,0,0,.06);
+  border-radius:12px;
+  min-height:46px;
 }
 
 .answers{
@@ -145,35 +229,107 @@ body{
   grid-template-columns:1fr 1fr;
   gap:8px;
 }
-.answer{
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:10px;
-  cursor:pointer;
-  font-weight:900;
+.col{
+  display:grid;
+  grid-template-rows:1fr 1fr;
+  gap:8px;
+  align-items:stretch;
 }
-.answer.correct{background:#dcfce7}
-.answer.wrong{background:#fee2e2}
-.answer.disabled{opacity:.45;pointer-events:none}
+.answer{
+  border-radius:12px;
+  border:1px solid var(--border);
+  font-weight:950;
+  cursor:pointer;
+  background:#fff;
+  padding:10px 12px 10px 14px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  text-align:left;
+  line-height:1.15;
+  min-height:60px;
+  font-size:14px;
+}
+.answer:hover{ background:#f9fafb; }
+.answer.disabled{ opacity:.45; pointer-events:none; }
+.answer.correct{ background:#dcfce7; border-color:rgba(22,163,74,.55); }
+.answer.wrong{ background:#fee2e2; border-color:rgba(220,38,38,.55); }
 
 .bottomControls{
   display:flex;
   justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  color:var(--muted);
+  font-weight:900;
+  font-size:12px;
+}
+.btn{
+  padding:8px 12px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:#fff;
+  font-weight:900;
+  cursor:pointer;
+  font-size:13px;
 }
 
+/* Teacher panel */
 .teacherPanel{
   position:fixed;
-  bottom:10px;
   left:50%;
   transform:translateX(-50%);
-  width:min(1100px,calc(100vw - 20px));
+  bottom:10px;
+  width:min(1100px, calc(100vw - 20px));
   background:#fff;
+  border:1px solid rgba(0,0,0,.15);
   border-radius:16px;
   padding:12px;
-  border:1px solid var(--border);
+  box-shadow:0 12px 34px rgba(0,0,0,.12);
+  z-index:3600;
   display:none;
 }
-.teacherPanel.open{display:block}
+.teacherPanel.open{ display:block; }
+
+.tpTop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.tpTop .title{font-weight:1000;font-size:13px;display:flex;gap:8px;align-items:center}
+.lockPill{
+  font-size:11px;
+  font-weight:1000;
+  padding:4px 8px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.12);
+  background:#f8fafc;
+  color:#111;
+}
+.savePill{
+  font-size:11px;
+  font-weight:1000;
+  padding:4px 8px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.12);
+  background:#fff;
+  color:#111;
+}
+.tpTop .close{border:1px solid var(--border);background:#fff;border-radius:12px;padding:7px 9px;font-weight:950;cursor:pointer;font-size:13px}
+
+label{display:block;font-size:11px;font-weight:900;color:var(--muted);margin:7px 0 5px}
+input.tp,textarea.tp{
+  width:100%;
+  padding:9px 10px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  font:inherit;
+  user-select:text;
+  outline:none;
+  font-size:13px;
+}
+textarea.tp{min-height:66px;resize:vertical}
+.tpGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.tpActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.btnPrimary{ background:#111; color:#fff; border-color:transparent; }
+.smallHint{font-size:11px;color:var(--muted);margin-top:6px}
 
 .footer{
   position:fixed;
@@ -181,6 +337,7 @@ body{
   right:14px;
   font-size:11px;
   color:var(--muted);
+  z-index:2000;
 }
 </style>
 </head>
@@ -188,69 +345,536 @@ body{
 <body>
 
 <div class="topTitle">Kennis Battle</div>
-<button class="teacherBtn" id="teacherBtn">Teacher</button>
+<button class="teacherBtn" id="teacherBtn" type="button">Teacher</button>
 
-<div class="wrap">
+<div class="wrap" id="app">
   <div class="topRow">
     <div class="teamCard A" id="cardA">
-      <input id="nameAInput" class="nameInput" placeholder="Team A">
-      <div id="scoreA" class="score">0</div>
+      <input class="nameInput" id="nameAInput" placeholder="Team A" value="" maxlength="18" aria-label="Naam team A">
+      <div class="score" id="scoreA">0</div>
     </div>
+
     <div class="teamCard B" id="cardB">
-      <input id="nameBInput" class="nameInput" placeholder="Team B">
-      <div id="scoreB" class="score">0</div>
+      <input class="nameInput" id="nameBInput" placeholder="Team B" value="" maxlength="18" aria-label="Naam team B">
+      <div class="score" id="scoreB">0</div>
     </div>
   </div>
 
   <div class="main">
-    <div class="videoBox">
-      <div id="playerHost"></div>
-      <div class="playOverlay">
-        <button class="playBtn" id="playBtn">▶ Start video</button>
+    <div class="videoStage">
+      <div class="videoBox">
+        <div id="playerHost"></div>
+
+        <div class="playOverlay" id="playOverlay">
+          <button class="playBtn" id="playBtn" type="button">
+            <span class="playIcon"></span>
+            <span id="playText">Start video</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="videoControls">
+        <button class="ctrlBtn primary" id="btnPlay" type="button">Play</button>
+        <button class="ctrlBtn" id="btnStop" type="button" disabled>Stop</button>
       </div>
     </div>
 
     <div class="qa">
-      <div id="question" class="question">—</div>
-      <div class="answers" id="answers"></div>
+      <div class="question" id="question">—</div>
+      <div class="answers">
+        <div class="col" id="colLeft"></div>
+        <div class="col" id="colRight"></div>
+      </div>
     </div>
 
     <div class="bottomControls">
-      <div id="roundInfo">Ronde 1</div>
-      <button id="next">Volgende</button>
+      <div id="roundInfo">Ronde 1/1</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="prev" type="button">◀</button>
+        <button class="btn" id="next" type="button">▶</button>
+        <button class="btn" id="resetScore" type="button">Reset score</button>
+      </div>
     </div>
   </div>
 </div>
 
-<div class="teacherPanel" id="teacherPanel">
-  <b>Teacher panel</b><br><br>
-  <input id="tpVideo" placeholder="YouTube ID"><br>
-  <textarea id="tpQuestion" placeholder="Vraag"></textarea><br>
-  <input id="tpA" placeholder="Antwoord A">
-  <input id="tpB" placeholder="Antwoord B">
-  <input id="tpC" placeholder="Antwoord C">
-  <input id="tpD" placeholder="Antwoord D"><br>
-  <input id="tpCorrect" placeholder="Correct (A/B/C/D)">
+<div class="teacherPanel" id="teacherPanel" aria-hidden="true">
+  <div class="tpTop">
+    <div class="title">
+      Teacher panel
+      <span class="lockPill" id="lockPill">🔒 locked</span>
+      <span class="savePill" id="savePill">Saved ✓</span>
+    </div>
+    <button class="close" id="tpClose" type="button">Sluit</button>
+  </div>
+
+  <div class="tpGrid">
+    <div style="grid-column:1/-1">
+      <label>YouTube link of ID</label>
+      <input class="tp" id="tpVideo" placeholder="https://youtu.be/QV4tivE8vYo (of: QV4tivE8vYo)">
+      <div class="smallHint">Tip: plak een normale YouTube link of alleen de ID.</div>
+    </div>
+
+    <div style="grid-column:1/-1">
+      <label>Vraag</label>
+      <textarea class="tp" id="tpQuestion" placeholder="Typ je vraag..."></textarea>
+    </div>
+
+    <div><label>Antwoord A</label><input class="tp" id="tpA"></div>
+    <div><label>Antwoord B</label><input class="tp" id="tpB"></div>
+    <div><label>Antwoord C</label><input class="tp" id="tpC"></div>
+    <div><label>Antwoord D</label><input class="tp" id="tpD"></div>
+
+    <div style="grid-column:1/-1">
+      <label>Correct (A/B/C/D)</label>
+      <input class="tp" id="tpCorrect" placeholder="A">
+    </div>
+  </div>
+
+  <div class="tpActions">
+    <button class="btn btnPrimary" id="saveRound" type="button">Save / Update</button>
+    <button class="btn" id="addRound" type="button">Add ronde</button>
+    <button class="btn" id="deleteRound" type="button">Delete</button>
+  </div>
 </div>
 
 <div class="footer">Muziek met meester Luis</div>
 
 <script>
-const TEACHER_PASSWORD = "muziek";
-let teacherUnlocked = false;
+(() => {
+  // =========================
+  // Teacher password (local)
+  // =========================
+  const TEACHER_PASSWORD = "muziek"; // 👈 verander dit
+  let teacherUnlocked = false;
 
-const teacherBtn = document.getElementById("teacherBtn");
-const teacherPanel = document.getElementById("teacherPanel");
+  const STORAGE = "kennis_battle_rounds_v8";
+  const SCORE_KEY = "kennis_battle_scores_v8";
+  const NAMES_KEY = "kennis_battle_names_v8";
 
-teacherBtn.onclick = () => {
-  if(!teacherUnlocked){
-    const pw = prompt("Teacher wachtwoord:");
-    if(pw !== TEACHER_PASSWORD) return alert("Onjuist wachtwoord");
-    teacherUnlocked = true;
+  const el = id => document.getElementById(id);
+  const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
+
+  // -------------------------
+  // save pill
+  // -------------------------
+  let teacherSaveTimer = null;
+  function markTeacherSaving(){
+    el("savePill").textContent = "Saving…";
+    clearTimeout(teacherSaveTimer);
+    teacherSaveTimer = setTimeout(() => {
+      el("savePill").textContent = "Saved ✓";
+    }, 350);
   }
-  teacherPanel.classList.toggle("open");
-};
-</script>
 
+  function setLockUI(){
+    el("lockPill").textContent = teacherUnlocked ? "🔓 unlocked" : "🔒 locked";
+    el("teacherPanel").setAttribute("aria-hidden", teacherUnlocked ? "false" : "true");
+  }
+
+  // --- Teacher toggle with password ---
+  el("teacherBtn").addEventListener("click", () => {
+    if(!teacherUnlocked){
+      const pw = prompt("Teacher wachtwoord:");
+      if(pw !== TEACHER_PASSWORD){
+        alert("Onjuist wachtwoord");
+        return;
+      }
+      teacherUnlocked = true;
+      setLockUI();
+    }
+    el("teacherPanel").classList.toggle("open");
+  });
+  el("tpClose").addEventListener("click", () => el("teacherPanel").classList.remove("open"));
+
+  // --- Helpers ---
+  function ytId(v){
+    if(!v) return "";
+    v = String(v).trim();
+    if(/^[\w-]{6,}$/.test(v) && !v.includes("http")) return v;
+    const m = v.match(/[?&]v=([\w-]+)/) || v.match(/youtu\.be\/([\w-]+)/) || v.match(/youtube\.com\/embed\/([\w-]+)/);
+    return m ? m[1] : "";
+  }
+  function isValidRound(r){
+    if(!r.videoId) return false;
+    if(!r.q) return false;
+    if(!Array.isArray(r.a) || r.a.filter(Boolean).length < 2) return false;
+    return true;
+  }
+  function cleanName(s){ return String(s||"").trim().slice(0,18); }
+
+  function saveNames(){
+    localStorage.setItem(NAMES_KEY, JSON.stringify({
+      a: cleanName(el("nameAInput").value),
+      b: cleanName(el("nameBInput").value),
+    }));
+  }
+  el("nameAInput").addEventListener("input", saveNames);
+  el("nameBInput").addEventListener("input", saveNames);
+
+  // --- Load rounds ---
+  let rounds;
+  try{ rounds = JSON.parse(localStorage.getItem(STORAGE)); }catch(_){ rounds=null; }
+  if(!Array.isArray(rounds) || !rounds.length){
+    rounds = [{
+      videoId:"QV4tivE8vYo",
+      q:"Welk instrument hoor je?",
+      a:["Trompet","Trombone","Hoorn","Tuba"],
+      c:0
+    }];
+    localStorage.setItem(STORAGE, JSON.stringify(rounds));
+  }
+
+  // --- Load names ---
+  try{
+    const n = JSON.parse(localStorage.getItem(NAMES_KEY) || "{}");
+    if(typeof n.a === "string") el("nameAInput").value = cleanName(n.a);
+    if(typeof n.b === "string") el("nameBInput").value = cleanName(n.b);
+  }catch(_){}
+
+  // --- Scores ---
+  let scoreA = 0, scoreB = 0;
+  try{
+    const s = JSON.parse(localStorage.getItem(SCORE_KEY) || "{}");
+    if(typeof s.a === "number") scoreA = s.a;
+    if(typeof s.b === "number") scoreB = s.b;
+  }catch(_){}
+  el("scoreA").textContent = String(scoreA);
+  el("scoreB").textContent = String(scoreB);
+
+  // --- Turn logic ---
+  let idx = 0;
+  let startTeam = "A";
+  let attemptTeam = "A";
+  let answered = false;
+
+  function setActiveTeam(t){
+    el("cardA").classList.toggle("active", t==="A");
+    el("cardB").classList.toggle("active", t==="B");
+  }
+
+  function renderAnswers(feedbackIndex=null){
+    const r = rounds[idx];
+    const letters = ["A","B","C","D"];
+    const colL = el("colLeft");
+    const colR = el("colRight");
+    colL.innerHTML = "";
+    colR.innerHTML = "";
+
+    function makeBtn(n){
+      const d = document.createElement("div");
+      d.className = "answer";
+      d.textContent = `${letters[n]}: ${(r.a && r.a[n]) ? r.a[n] : "—"}`;
+      d.addEventListener("click", ()=>choose(n));
+
+      if(answered){
+        d.classList.add("disabled");
+        if(n === r.c) d.classList.add("correct");
+        if(feedbackIndex !== null && n === feedbackIndex && n !== r.c) d.classList.add("wrong");
+      }
+      return d;
+    }
+
+    colL.appendChild(makeBtn(0)); // A
+    colL.appendChild(makeBtn(2)); // C
+    colR.appendChild(makeBtn(1)); // B
+    colR.appendChild(makeBtn(3)); // D
+  }
+
+  function resetRoundUI(){
+    answered = false;
+    startTeam = (idx % 2 === 0) ? "A" : "B";
+    attemptTeam = startTeam;
+    setActiveTeam(attemptTeam);
+    renderAnswers();
+  }
+
+  // --- YouTube API ---
+  let ytReady = false;
+  let player = null;
+  let playerIsReady = false;
+  let currentVideoId = "";
+  let isPaused = false;
+
+  function setStopEnabled(on){ el("btnStop").disabled = !on; }
+  function setOverlayText(){ el("playText").textContent = isPaused ? "Verder kijken" : "Start video"; }
+
+  function loadYTApi(){
+    return new Promise((resolve) => {
+      if(ytReady && window.YT && window.YT.Player) return resolve();
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+      window.onYouTubeIframeAPIReady = () => { ytReady = true; resolve(); };
+    });
+  }
+
+  async function ensurePlayer(videoId){
+    await loadYTApi();
+    if(player && currentVideoId === videoId) return;
+
+    if(player && player.destroy){
+      try{ player.destroy(); }catch(_){}
+    }
+
+    currentVideoId = videoId;
+    playerIsReady = false;
+    setStopEnabled(false);
+    isPaused = false;
+    setOverlayText();
+
+    player = new YT.Player("playerHost", {
+      videoId,
+      playerVars: {
+        controls: 0,
+        fs: 0,
+        rel: 0,
+        modestbranding: 1,
+        iv_load_policy: 3,
+        disablekb: 1,
+        playsinline: 1,
+        autoplay: 0
+      },
+      events: {
+        onReady: () => { playerIsReady = true; setStopEnabled(true); },
+        onStateChange: (e) => {
+          if(!window.YT) return;
+          if(e.data === YT.PlayerState.PAUSED){ isPaused = true; setOverlayText(); el("playOverlay").style.display = "grid"; }
+          if(e.data === YT.PlayerState.PLAYING){
+            isPaused = false; setOverlayText();
+            el("playOverlay").style.display = "none";
+          }
+          if(e.data === YT.PlayerState.ENDED){
+            isPaused = false; setOverlayText();
+            el("playOverlay").style.display = "grid";
+          }
+        }
+      }
+    });
+  }
+
+  async function setVideo(videoId){
+    el("playOverlay").style.display = "grid";
+    isPaused = false;
+    setOverlayText();
+
+    el("playerHost").innerHTML = "";
+    if(!videoId){
+      el("playerHost").innerHTML =
+        `<div style="color:#fff;display:grid;place-items:center;width:100%;height:100%;font-weight:950;opacity:.9">Geen video</div>`;
+      setStopEnabled(false);
+      return;
+    }
+    await ensurePlayer(videoId);
+  }
+
+  async function playVideo(){
+    const id = rounds[idx]?.videoId || "";
+    if(!id) return;
+    await ensurePlayer(id);
+    try{
+      player.playVideo();
+      el("playOverlay").style.display = "none";
+      setStopEnabled(true);
+    }catch(_){}
+  }
+
+  function stopVideo(){
+    if(!player || !playerIsReady) return;
+    try{
+      player.pauseVideo();
+      player.seekTo(0, true);
+    }catch(_){}
+    isPaused = false;
+    setOverlayText();
+    el("playOverlay").style.display = "grid";
+  }
+
+  el("playBtn").addEventListener("click", playVideo);
+  el("btnPlay").addEventListener("click", playVideo);
+  el("btnStop").addEventListener("click", stopVideo);
+
+  // --- Teacher panel read/write ---
+  function readTeacher(){
+    const map = {A:0,B:1,C:2,D:3};
+    const cStr = String(el("tpCorrect").value||"").trim().toUpperCase();
+    const c = (cStr in map) ? map[cStr] : 0;
+
+    return {
+      videoId: ytId(el("tpVideo").value),
+      q: String(el("tpQuestion").value||"").trim(),
+      a: [
+        String(el("tpA").value||"").trim(),
+        String(el("tpB").value||"").trim(),
+        String(el("tpC").value||"").trim(),
+        String(el("tpD").value||"").trim()
+      ],
+      c
+    };
+  }
+
+  function writeTeacher(r){
+    el("tpVideo").value = r.videoId || "";
+    el("tpQuestion").value = r.q || "";
+    el("tpA").value = r.a?.[0] || "";
+    el("tpB").value = r.a?.[1] || "";
+    el("tpC").value = r.a?.[2] || "";
+    el("tpD").value = r.a?.[3] || "";
+    el("tpCorrect").value = ["A","B","C","D"][clamp(r.c||0,0,3)];
+  }
+
+  function persistRounds(){
+    localStorage.setItem(STORAGE, JSON.stringify(rounds));
+    markTeacherSaving();
+  }
+
+  let autosaveTimer = null;
+  function autosaveTeacherEdits(){
+    if(!teacherUnlocked) return;
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => {
+      const r = readTeacher();
+
+      rounds[idx] = {
+        videoId: r.videoId || rounds[idx].videoId || "",
+        q: r.q || "",
+        a: r.a || ["","","",""],
+        c: clamp(r.c||0,0,3)
+      };
+      persistRounds();
+
+      el("question").textContent = rounds[idx].q || "—";
+      renderAnswers();
+      if(r.videoId && r.videoId !== currentVideoId) setVideo(r.videoId);
+    }, 220);
+    el("savePill").textContent = "Saving…";
+  }
+
+  ["tpVideo","tpQuestion","tpA","tpB","tpC","tpD","tpCorrect"].forEach(id=>{
+    el(id).addEventListener("input", autosaveTeacherEdits);
+    el(id).addEventListener("change", autosaveTeacherEdits);
+  });
+
+  el("saveRound").addEventListener("click", ()=>{
+    if(!teacherUnlocked) return;
+    const r = readTeacher();
+    if(!isValidRound(r)){
+      alert("Vul minimaal: video + vraag + minstens 2 antwoorden.");
+      return;
+    }
+    rounds[idx] = r;
+    persistRounds();
+    loadRound();
+  });
+
+  el("addRound").addEventListener("click", ()=>{
+    if(!teacherUnlocked) return;
+    const r = readTeacher();
+    if(!isValidRound(r)){
+      alert("Vul minimaal: video + vraag + minstens 2 antwoorden.");
+      return;
+    }
+    rounds.push(r);
+    idx = rounds.length - 1;
+    persistRounds();
+    loadRound();
+  });
+
+  el("deleteRound").addEventListener("click", ()=>{
+    if(!teacherUnlocked) return;
+    if(rounds.length <= 1){
+      alert("Minimaal 1 ronde nodig.");
+      return;
+    }
+    if(!confirm("Deze ronde verwijderen?")) return;
+    rounds.splice(idx,1);
+    idx = clamp(idx, 0, rounds.length - 1);
+    persistRounds();
+    loadRound();
+  });
+
+  function loadRound(){
+    idx = clamp(idx, 0, rounds.length - 1);
+    const r = rounds[idx];
+
+    el("roundInfo").textContent = `Ronde ${idx+1}/${rounds.length}`;
+    el("question").textContent = r.q || "—";
+    setVideo(r.videoId || "");
+
+    el("prev").disabled = (idx === 0);
+    el("next").disabled = (idx === rounds.length - 1);
+
+    writeTeacher(r);
+    resetRoundUI();
+  }
+
+  function awardPoint(t){
+    if(t==="A") scoreA++; else scoreB++;
+    el("scoreA").textContent = String(scoreA);
+    el("scoreB").textContent = String(scoreB);
+    localStorage.setItem(SCORE_KEY, JSON.stringify({a:scoreA, b:scoreB}));
+  }
+
+  function choose(n){
+    if(answered) return;
+
+    const r = rounds[idx];
+    answered = true;
+    const correct = (n === r.c);
+    renderAnswers(n);
+
+    if(correct){
+      awardPoint(attemptTeam);
+      setTimeout(nextAuto, 900);
+      return;
+    }
+
+    const opp = (attemptTeam==="A") ? "B" : "A";
+    if(attemptTeam === startTeam){
+      attemptTeam = opp;
+      setActiveTeam(attemptTeam);
+      setTimeout(() => {
+        answered = false;
+        renderAnswers(null);
+      }, 550);
+      return;
+    }
+
+    setTimeout(nextAuto, 800);
+  }
+
+  function nextAuto(){
+    if(idx < rounds.length - 1){
+      idx++;
+      loadRound();
+    }else{
+      loadRound();
+    }
+  }
+
+  el("prev").addEventListener("click", ()=>{ idx = Math.max(0, idx-1); loadRound(); });
+  el("next").addEventListener("click", ()=>{ idx = Math.min(rounds.length-1, idx+1); loadRound(); });
+
+  el("resetScore").addEventListener("click", ()=>{
+    scoreA = 0; scoreB = 0;
+    el("scoreA").textContent = "0";
+    el("scoreB").textContent = "0";
+    localStorage.setItem(SCORE_KEY, JSON.stringify({a:scoreA, b:scoreB}));
+  });
+
+  window.addEventListener("keydown", (e)=>{
+    if(answered) return;
+    if(e.key==="1") choose(0);
+    if(e.key==="2") choose(1);
+    if(e.key==="3") choose(2);
+    if(e.key==="4") choose(3);
+    if(e.key.toLowerCase()==="x") stopVideo();
+    if(e.key.toLowerCase()==="p") playVideo();
+  });
+
+  setLockUI();
+  loadRound();
+})();
+</script>
 </body>
 </html>
