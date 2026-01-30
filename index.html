@@ -25,8 +25,6 @@ body{
   overflow:hidden;
 }
 
-/* (PIN GATE CSS verwijderd) */
-
 .topTitle{
   position:fixed;
   top:14px;
@@ -65,59 +63,63 @@ body{
 }
 
 .topRow{
-  display:grid;
-  grid-template-columns:1fr 1fr; /* status pill removed */
-  align-items:center;
-  gap:8px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  padding:0;
 }
 
 .teamCard{
-  border:none;
-  background:transparent;
-  padding:4px 6px;
+  border:1px solid rgba(0,0,0,.12);
+  background:#fff;
+  padding:8px 12px;
+  border-radius:12px;
   display:flex;
   flex-direction:column;
-  align-items:center;
-  gap:6px;
+  align-items:flex-start;
+  gap:4px;
+  min-width:200px;
+  transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.teamCard .score{
+  font-size:16px;
+  font-weight:1000;
+  line-height:1;
+  color:#111;
 }
 
 .nameInput{
-  width:140px;
-  max-width:42vw;
+  width:100%;
   text-align:center;
-  font-weight:1000;
-  font-size:13px;
+  font-weight:600;
+  font-size:11px;
   border:1px solid rgba(0,0,0,.10);
-  border-radius:12px;
-  padding:6px 8px;
+  border-radius:8px;
+  padding:5px 8px;
   outline:none;
   user-select:text;
   background:#fff;
-  transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
+  color:#666;
+  transition: border-color .15s ease;
 }
-.teamCard.A .nameInput{ color:var(--A); }
-.teamCard.B .nameInput{ color:var(--B); }
+.nameInput::placeholder{ color:#999; }
+.nameInput:focus{ border-color:rgba(0,0,0,.25); }
 
-.teamCard .score{
-  font-size:26px;
-  font-weight:1000;
-  line-height:1;
-  padding:2px 8px;
-  border-radius:999px;
-  border:1px solid rgba(0,0,0,.08);
-  background:#fff;
+/* Active states - red left, green right */
+.teamCard.A.active{
+  background:rgba(239,68,68,.1);
+  border-color:rgba(239,68,68,.5);
+  box-shadow:0 0 0 3px rgba(239,68,68,.1);
 }
+.teamCard.A.active .score{ color:#dc2626; }
 
-.teamCard.A.active .nameInput{
-  border-color: rgba(79,124,255,.55);
-  box-shadow: 0 0 0 5px rgba(79,124,255,.22);
-  transform: scale(1.03);
+.teamCard.B.active{
+  background:rgba(34,197,94,.1);
+  border-color:rgba(34,197,94,.5);
+  box-shadow:0 0 0 3px rgba(34,197,94,.1);
 }
-.teamCard.B.active .nameInput{
-  border-color: rgba(239,68,68,.55);
-  box-shadow: 0 0 0 5px rgba(239,68,68,.20);
-  transform: scale(1.03);
-}
+.teamCard.B.active .score{ color:#16a34a; }
 
 .main{
   display:grid;
@@ -284,6 +286,8 @@ body{
   transform:translateX(-50%);
   bottom:10px;
   width:min(1100px, calc(100vw - 20px));
+  max-height:calc(100vh - 80px);
+  overflow-y:auto;
   background:#fff;
   border:1px solid rgba(0,0,0,.15);
   border-radius:16px;
@@ -295,7 +299,7 @@ body{
 .teacherPanel.open{ display:block; }
 
 .tpTop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
-.tpTop .title{font-weight:1000;font-size:13px;display:flex;gap:8px;align-items:center}
+.tpTop .title{font-weight:1000;font-size:13px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .lockPill{
   font-size:11px;
   font-weight:1000;
@@ -333,6 +337,57 @@ textarea.tp{min-height:66px;resize:vertical}
 .btnPrimary{ background:#111; color:#fff; border-color:transparent; }
 .smallHint{font-size:11px;color:var(--muted);margin-top:6px}
 
+/* Export/Import section */
+.exportSection{
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid var(--border);
+}
+.exportSection .sectionTitle{
+  font-weight:1000;
+  font-size:12px;
+  margin-bottom:10px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.exportBtns{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+}
+.importArea{
+  display:none;
+  margin-top:10px;
+}
+.importArea.show{ display:block; }
+.importArea textarea{
+  width:100%;
+  min-height:80px;
+  padding:10px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  font-family:monospace;
+  font-size:12px;
+  resize:vertical;
+}
+.importActions{
+  display:flex;
+  gap:8px;
+  margin-top:8px;
+}
+.copySuccess{
+  display:inline-block;
+  margin-left:8px;
+  font-size:11px;
+  color:#22c55e;
+  font-weight:900;
+  opacity:0;
+  transition:opacity .2s;
+}
+.copySuccess.show{ opacity:1; }
+
 .footer{
   position:fixed;
   bottom:10px;
@@ -340,6 +395,11 @@ textarea.tp{min-height:66px;resize:vertical}
   font-size:11px;
   color:var(--muted);
   z-index:2000;
+}
+
+/* Hidden file input */
+#importFileInput{
+  display:none;
 }
 </style>
 </head>
@@ -352,13 +412,13 @@ textarea.tp{min-height:66px;resize:vertical}
 <div class="wrap" id="app">
   <div class="topRow">
     <div class="teamCard A" id="cardA">
-      <input class="nameInput" id="nameAInput" placeholder="Team A" value="" maxlength="18" aria-label="Naam team A">
       <div class="score" id="scoreA">0</div>
+      <input class="nameInput" id="nameAInput" placeholder="Naam speler" value="" maxlength="18" aria-label="Naam team A">
     </div>
 
     <div class="teamCard B" id="cardB">
-      <input class="nameInput" id="nameBInput" placeholder="Team B" value="" maxlength="18" aria-label="Naam team B">
       <div class="score" id="scoreB">0</div>
+      <input class="nameInput" id="nameBInput" placeholder="Naam speler" value="" maxlength="18" aria-label="Naam team B">
     </div>
   </div>
 
@@ -404,7 +464,7 @@ textarea.tp{min-height:66px;resize:vertical}
   <div class="tpTop">
     <div class="title">
       Teacher panel
-      <span class="lockPill" id="lockPill">🔒 locked</span>
+      <span class="lockPill" id="lockPill">locked</span>
       <span class="savePill" id="savePill">Saved ✓</span>
     </div>
     <button class="close" id="tpClose" type="button">Sluit</button>
@@ -438,6 +498,34 @@ textarea.tp{min-height:66px;resize:vertical}
     <button class="btn" id="addRound" type="button">Add ronde</button>
     <button class="btn" id="deleteRound" type="button">Delete</button>
   </div>
+
+  <!-- Export/Import Section -->
+  <div class="exportSection">
+    <div class="sectionTitle">
+      Delen & Importeren
+      <span class="copySuccess" id="copySuccess">Gekopieerd!</span>
+    </div>
+    <div class="exportBtns">
+      <button class="btn" id="exportCopy" type="button">Kopieer alle rondes</button>
+      <button class="btn" id="exportDownload" type="button">Download als bestand</button>
+      <button class="btn" id="importShow" type="button">Importeer rondes</button>
+    </div>
+    <div class="smallHint">Exporteer je rondes om te delen met andere docenten, of importeer rondes van collega's.</div>
+    
+    <div class="importArea" id="importArea">
+      <label>Plak hier de geëxporteerde data of kies een bestand:</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="btn" id="importFileBtn" type="button">Kies bestand</button>
+        <input type="file" id="importFileInput" accept=".json,.txt">
+      </div>
+      <textarea id="importData" placeholder='Plak hier de JSON data (begint met [{"videoId":...}])...'></textarea>
+      <div class="importActions">
+        <button class="btn btnPrimary" id="importReplace" type="button">Vervang alle rondes</button>
+        <button class="btn btnPrimary" id="importAdd" type="button">Voeg toe aan bestaande</button>
+        <button class="btn" id="importCancel" type="button">Annuleer</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="footer">Muziek met meester Luis</div>
@@ -470,7 +558,7 @@ textarea.tp{min-height:66px;resize:vertical}
   }
 
   function setLockUI(){
-    el("lockPill").textContent = teacherUnlocked ? "🔓 unlocked" : "🔒 locked";
+    el("lockPill").textContent = teacherUnlocked ? "unlocked" : "locked";
     el("teacherPanel").setAttribute("aria-hidden", teacherUnlocked ? "false" : "true");
   }
 
@@ -794,6 +882,183 @@ textarea.tp{min-height:66px;resize:vertical}
     persistRounds();
     loadRound();
   });
+
+  // ============================
+  // EXPORT / IMPORT FUNCTIONS
+  // ============================
+  
+  function showCopySuccess(){
+    const pill = el("copySuccess");
+    pill.classList.add("show");
+    setTimeout(() => pill.classList.remove("show"), 2000);
+  }
+
+  // Export: Copy to clipboard
+  el("exportCopy").addEventListener("click", () => {
+    if(!teacherUnlocked) return;
+    const data = JSON.stringify(rounds, null, 2);
+    navigator.clipboard.writeText(data).then(() => {
+      showCopySuccess();
+    }).catch(() => {
+      // Fallback for older browsers
+      const ta = document.createElement("textarea");
+      ta.value = data;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      showCopySuccess();
+    });
+  });
+
+  // Export: Download as file
+  el("exportDownload").addEventListener("click", () => {
+    if(!teacherUnlocked) return;
+    const data = JSON.stringify(rounds, null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const date = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `kennis-battle-rondes-${date}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // Show/hide import area
+  el("importShow").addEventListener("click", () => {
+    el("importArea").classList.toggle("show");
+  });
+
+  el("importCancel").addEventListener("click", () => {
+    el("importArea").classList.remove("show");
+    el("importData").value = "";
+  });
+
+  // File input handler
+  el("importFileBtn").addEventListener("click", () => {
+    el("importFileInput").click();
+  });
+
+  el("importFileInput").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      el("importData").value = ev.target.result;
+    };
+    reader.readAsText(file);
+    e.target.value = ""; // Reset for re-selecting same file
+  });
+
+  // Parse and validate import data
+  function parseImportData(){
+    const raw = el("importData").value.trim();
+    if(!raw){
+      alert("Plak eerst data of kies een bestand.");
+      return null;
+    }
+    
+    let parsed;
+    try{
+      parsed = JSON.parse(raw);
+    }catch(e){
+      alert("Ongeldige JSON data. Controleer het format.");
+      return null;
+    }
+    
+    if(!Array.isArray(parsed)){
+      alert("Data moet een array van rondes zijn.");
+      return null;
+    }
+    
+    // Validate each round
+    const validRounds = [];
+    for(let i = 0; i < parsed.length; i++){
+      const r = parsed[i];
+      if(!r || typeof r !== "object"){
+        alert(`Ronde ${i+1} is ongeldig.`);
+        return null;
+      }
+      
+      // Normalize the round
+      const normalized = {
+        videoId: ytId(r.videoId || r.video || ""),
+        q: String(r.q || r.question || "").trim(),
+        a: Array.isArray(r.a) ? r.a.map(x => String(x||"").trim()) : 
+           Array.isArray(r.answers) ? r.answers.map(x => String(x||"").trim()) :
+           ["","","",""],
+        c: typeof r.c === "number" ? clamp(r.c, 0, 3) :
+           typeof r.correct === "number" ? clamp(r.correct, 0, 3) : 0
+      };
+      
+      // Ensure 4 answers
+      while(normalized.a.length < 4) normalized.a.push("");
+      normalized.a = normalized.a.slice(0,4);
+      
+      if(!isValidRound(normalized)){
+        alert(`Ronde ${i+1} mist video, vraag of minimaal 2 antwoorden.`);
+        return null;
+      }
+      
+      validRounds.push(normalized);
+    }
+    
+    if(validRounds.length === 0){
+      alert("Geen geldige rondes gevonden.");
+      return null;
+    }
+    
+    return validRounds;
+  }
+
+  // Import: Replace all rounds
+  el("importReplace").addEventListener("click", () => {
+    if(!teacherUnlocked) return;
+    
+    const newRounds = parseImportData();
+    if(!newRounds) return;
+    
+    if(!confirm(`${newRounds.length} ronde(s) gevonden. Alle bestaande rondes vervangen?`)){
+      return;
+    }
+    
+    rounds = newRounds;
+    idx = 0;
+    persistRounds();
+    loadRound();
+    
+    el("importArea").classList.remove("show");
+    el("importData").value = "";
+    alert(`${newRounds.length} ronde(s) geïmporteerd!`);
+  });
+
+  // Import: Add to existing rounds
+  el("importAdd").addEventListener("click", () => {
+    if(!teacherUnlocked) return;
+    
+    const newRounds = parseImportData();
+    if(!newRounds) return;
+    
+    if(!confirm(`${newRounds.length} ronde(s) toevoegen aan de bestaande ${rounds.length} ronde(s)?`)){
+      return;
+    }
+    
+    rounds = rounds.concat(newRounds);
+    persistRounds();
+    loadRound();
+    
+    el("importArea").classList.remove("show");
+    el("importData").value = "";
+    alert(`${newRounds.length} ronde(s) toegevoegd! Totaal: ${rounds.length} rondes.`);
+  });
+
+  // ============================
+  // END EXPORT / IMPORT
+  // ============================
 
   function loadRound(){
     idx = clamp(idx, 0, rounds.length - 1);
