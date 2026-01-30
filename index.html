@@ -377,16 +377,6 @@ textarea.tp{min-height:66px;resize:vertical}
   gap:8px;
   margin-top:8px;
 }
-.copySuccess{
-  display:inline-block;
-  margin-left:8px;
-  font-size:11px;
-  color:#22c55e;
-  font-weight:900;
-  opacity:0;
-  transition:opacity .2s;
-}
-.copySuccess.show{ opacity:1; }
 
 .footer{
   position:fixed;
@@ -503,10 +493,8 @@ textarea.tp{min-height:66px;resize:vertical}
   <div class="exportSection">
     <div class="sectionTitle">
       Delen & Importeren
-      <span class="copySuccess" id="copySuccess">Gekopieerd!</span>
     </div>
     <div class="exportBtns">
-      <button class="btn" id="exportCopy" type="button">Kopieer alle rondes</button>
       <button class="btn" id="exportDownload" type="button">Download als bestand</button>
       <button class="btn" id="importShow" type="button">Importeer rondes</button>
     </div>
@@ -887,30 +875,6 @@ textarea.tp{min-height:66px;resize:vertical}
   // EXPORT / IMPORT FUNCTIONS
   // ============================
   
-  function showCopySuccess(){
-    const pill = el("copySuccess");
-    pill.classList.add("show");
-    setTimeout(() => pill.classList.remove("show"), 2000);
-  }
-
-  // Export: Copy to clipboard
-  el("exportCopy").addEventListener("click", () => {
-    if(!teacherUnlocked) return;
-    const data = JSON.stringify(rounds, null, 2);
-    navigator.clipboard.writeText(data).then(() => {
-      showCopySuccess();
-    }).catch(() => {
-      // Fallback for older browsers
-      const ta = document.createElement("textarea");
-      ta.value = data;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      showCopySuccess();
-    });
-  });
-
   // Export: Download as file
   el("exportDownload").addEventListener("click", () => {
     if(!teacherUnlocked) return;
