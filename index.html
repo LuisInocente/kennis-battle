@@ -89,8 +89,23 @@ body{
   color:#111;
 }
 
-.nameInput{
+.nameRow{
+  display:flex;
+  align-items:center;
+  gap:8px;
   width:100%;
+}
+
+.keyLabel{
+  font-size:14px;
+  font-weight:900;
+  color:#999;
+  min-width:16px;
+  text-align:center;
+}
+
+.nameInput{
+  flex:1;
   text-align:center;
   font-weight:600;
   font-size:16px;
@@ -209,7 +224,7 @@ body{
   border-radius:14px;
   padding:10px;
   display:grid;
-  grid-template-rows:auto auto 1fr;
+  grid-template-rows:auto 1fr;
   gap:8px;
   min-height:0;
   background:#fff;
@@ -226,20 +241,6 @@ body{
   border:1px solid rgba(0,0,0,.06);
   border-radius:12px;
   min-height:46px;
-}
-
-.buzzHint{
-  text-align:center;
-  font-size:13px;
-  font-weight:700;
-  color:#666;
-  padding:6px;
-  background:#f5f5f5;
-  border-radius:8px;
-  transition: opacity .2s;
-}
-.buzzHint.hidden{
-  opacity:0;
 }
 
 .answers{
@@ -401,6 +402,45 @@ textarea.tp{min-height:66px;resize:vertical}
   z-index:2000;
 }
 
+.winnerModal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.5);
+  z-index:5000;
+  place-items:center;
+}
+.winnerModal.show{
+  display:grid;
+}
+.winnerBox{
+  background:#fff;
+  border-radius:20px;
+  padding:32px 48px;
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+.winnerTitle{
+  font-size:24px;
+  font-weight:900;
+  margin-bottom:8px;
+}
+.winnerName{
+  font-size:36px;
+  font-weight:1000;
+  margin-bottom:8px;
+}
+.winnerScore{
+  font-size:20px;
+  font-weight:700;
+  color:#666;
+  margin-bottom:20px;
+}
+.winnerModal .btn{
+  padding:12px 24px;
+  font-size:15px;
+}
+
 /* Hidden file input */
 #importFileInput{
   display:none;
@@ -417,12 +457,18 @@ textarea.tp{min-height:66px;resize:vertical}
   <div class="topRow">
     <div class="teamCard A" id="cardA">
       <div class="score" id="scoreA">0</div>
-      <input class="nameInput" id="nameAInput" placeholder="Naam speler" value="" maxlength="18" aria-label="Naam team A">
+      <div class="nameRow">
+        <span class="keyLabel">A</span>
+        <input class="nameInput" id="nameAInput" placeholder="Naam" value="" maxlength="18" aria-label="Naam team A">
+      </div>
     </div>
 
     <div class="teamCard B" id="cardB">
       <div class="score" id="scoreB">0</div>
-      <input class="nameInput" id="nameBInput" placeholder="Naam speler" value="" maxlength="18" aria-label="Naam team B">
+      <div class="nameRow">
+        <input class="nameInput" id="nameBInput" placeholder="Naam" value="" maxlength="18" aria-label="Naam team B">
+        <span class="keyLabel">L</span>
+      </div>
     </div>
   </div>
 
@@ -447,7 +493,6 @@ textarea.tp{min-height:66px;resize:vertical}
 
     <div class="qa">
       <div class="question" id="question">—</div>
-      <div class="buzzHint" id="buzzHint">Druk A (links) of L (rechts) om te buzzen!</div>
       <div class="answers">
         <div class="col" id="colLeft"></div>
         <div class="col" id="colRight"></div>
@@ -457,8 +502,6 @@ textarea.tp{min-height:66px;resize:vertical}
     <div class="bottomControls">
       <div id="roundInfo">Ronde 1/1</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn" id="prev" type="button">◀</button>
-        <button class="btn" id="next" type="button">▶</button>
         <button class="btn" id="resetScore" type="button">Reset score</button>
       </div>
     </div>
@@ -499,6 +542,8 @@ textarea.tp{min-height:66px;resize:vertical}
   </div>
 
   <div class="tpActions">
+    <button class="btn" id="prev" type="button">◀ Vorige</button>
+    <button class="btn" id="next" type="button">Volgende ▶</button>
     <button class="btn btnPrimary" id="saveRound" type="button">Save / Update</button>
     <button class="btn" id="addRound" type="button">Add ronde</button>
     <button class="btn" id="deleteRound" type="button">Delete</button>
@@ -532,6 +577,15 @@ textarea.tp{min-height:66px;resize:vertical}
 </div>
 
 <div class="footer">Muziek met meester Luis</div>
+
+<div class="winnerModal" id="winnerModal">
+  <div class="winnerBox">
+    <div class="winnerTitle" id="winnerTitle">🏆 Winnaar!</div>
+    <div class="winnerName" id="winnerName">Team A</div>
+    <div class="winnerScore" id="winnerScore">5 - 3</div>
+    <button class="btn btnPrimary" id="closeWinner" type="button">Sluiten</button>
+  </div>
+</div>
 
 <script>
 (() => {
@@ -680,7 +734,6 @@ textarea.tp{min-height:66px;resize:vertical}
     answered = false;
     buzzedTeam = null;
     setActiveTeam(null);
-    el("buzzHint").classList.remove("hidden");
     renderAnswers();
     el("question").textContent = rounds[idx].q || "—";
   }
@@ -689,7 +742,6 @@ textarea.tp{min-height:66px;resize:vertical}
     if(buzzedTeam || answered) return; // Already buzzed or answered
     buzzedTeam = team;
     setActiveTeam(team);
-    el("buzzHint").classList.add("hidden");
     renderAnswers();
   }
 
@@ -1087,8 +1139,39 @@ textarea.tp{min-height:66px;resize:vertical}
       awardPoint(opponent);
     }
     
-    setTimeout(nextAuto, 900);
+    // Check if last round
+    if(idx >= rounds.length - 1){
+      setTimeout(showWinner, 1000);
+    } else {
+      setTimeout(nextAuto, 900);
+    }
   }
+
+  function showWinner(){
+    const nameA = el("nameAInput").value.trim() || "Team A";
+    const nameB = el("nameBInput").value.trim() || "Team B";
+    
+    let title, name;
+    if(scoreA > scoreB){
+      title = "Winnaar!";
+      name = nameA;
+    } else if(scoreB > scoreA){
+      title = "Winnaar!";
+      name = nameB;
+    } else {
+      title = "Gelijkspel!";
+      name = nameA + " & " + nameB;
+    }
+    
+    el("winnerTitle").textContent = title;
+    el("winnerName").textContent = name;
+    el("winnerScore").textContent = scoreA + " - " + scoreB;
+    el("winnerModal").classList.add("show");
+  }
+
+  el("closeWinner").addEventListener("click", () => {
+    el("winnerModal").classList.remove("show");
+  });
 
   function nextAuto(){
     if(idx < rounds.length - 1){
