@@ -297,11 +297,11 @@ body{
 /* Teacher panel */
 .teacherPanel{
   position:fixed;
-  left:50%;
-  transform:translateX(-50%);
+  right:10px;
+  top:50px;
   bottom:10px;
-  width:min(1100px, calc(100vw - 20px));
-  max-height:calc(100vh - 80px);
+  width:320px;
+  max-height:calc(100vh - 60px);
   overflow-y:auto;
   background:#fff;
   border:1px solid rgba(0,0,0,.15);
@@ -313,12 +313,12 @@ body{
 }
 .teacherPanel.open{ display:block; }
 
-.tpTop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
-.tpTop .title{font-weight:1000;font-size:13px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tpTop{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.tpTop .title{font-weight:1000;font-size:13px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .lockPill{
-  font-size:11px;
+  font-size:10px;
   font-weight:1000;
-  padding:4px 8px;
+  padding:3px 6px;
   border-radius:999px;
   border:1px solid rgba(0,0,0,.12);
   background:#f8fafc;
@@ -333,7 +333,24 @@ body{
   background:#fff;
   color:#111;
 }
-.tpTop .close{border:1px solid var(--border);background:#fff;border-radius:12px;padding:7px 9px;font-weight:950;cursor:pointer;font-size:13px}
+.tpTop .close{border:1px solid var(--border);background:#fff;border-radius:8px;padding:5px 8px;font-weight:950;cursor:pointer;font-size:13px}
+
+.tpNav{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  margin-bottom:12px;
+  padding:8px;
+  background:#f5f5f5;
+  border-radius:10px;
+}
+.tpRoundInfo{
+  font-weight:1000;
+  font-size:14px;
+  min-width:40px;
+  text-align:center;
+}
 
 label{display:block;font-size:11px;font-weight:900;color:var(--muted);margin:7px 0 5px}
 input.tp,textarea.tp{
@@ -347,8 +364,9 @@ input.tp,textarea.tp{
   font-size:13px;
 }
 textarea.tp{min-height:66px;resize:vertical}
-.tpGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.tpGrid{display:grid;grid-template-columns:1fr;gap:9px}
 .tpActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.tpActions .btn{flex:1;min-width:80px;text-align:center}
 .btnPrimary{ background:#111; color:#fff; border-color:transparent; }
 .smallHint{font-size:11px;color:var(--muted);margin-top:6px}
 
@@ -369,7 +387,7 @@ textarea.tp{min-height:66px;resize:vertical}
 .exportBtns{
   display:flex;
   gap:8px;
-  flex-wrap:wrap;
+  flex-direction:column;
   margin-bottom:10px;
 }
 .importArea{
@@ -391,6 +409,12 @@ textarea.tp{min-height:66px;resize:vertical}
   display:flex;
   gap:8px;
   margin-top:8px;
+  flex-wrap:wrap;
+}
+.importActions .btn{
+  flex:1;
+  min-width:80px;
+  text-align:center;
 }
 
 .footer{
@@ -511,21 +535,26 @@ textarea.tp{min-height:66px;resize:vertical}
 <div class="teacherPanel" id="teacherPanel" aria-hidden="true">
   <div class="tpTop">
     <div class="title">
-      Teacher panel
+      Teacher
       <span class="lockPill" id="lockPill">locked</span>
       <span class="savePill" id="savePill">Saved ✓</span>
     </div>
-    <button class="close" id="tpClose" type="button">Sluit</button>
+    <button class="close" id="tpClose" type="button">✕</button>
+  </div>
+
+  <div class="tpNav">
+    <button class="btn" id="prev" type="button">◀</button>
+    <span class="tpRoundInfo" id="tpRoundInfo">1/1</span>
+    <button class="btn" id="next" type="button">▶</button>
   </div>
 
   <div class="tpGrid">
-    <div style="grid-column:1/-1">
+    <div>
       <label>YouTube link of ID</label>
       <input class="tp" id="tpVideo" placeholder="https://youtu.be/QV4tivE8vYo (of: QV4tivE8vYo)">
-      <div class="smallHint">Tip: plak een normale YouTube link of alleen de ID.</div>
     </div>
 
-    <div style="grid-column:1/-1">
+    <div>
       <label>Vraag</label>
       <textarea class="tp" id="tpQuestion" placeholder="Typ je vraag..."></textarea>
     </div>
@@ -535,17 +564,15 @@ textarea.tp{min-height:66px;resize:vertical}
     <div><label>Antwoord C</label><input class="tp" id="tpC"></div>
     <div><label>Antwoord D</label><input class="tp" id="tpD"></div>
 
-    <div style="grid-column:1/-1">
+    <div>
       <label>Correct (A/B/C/D)</label>
       <input class="tp" id="tpCorrect" placeholder="A">
     </div>
   </div>
 
   <div class="tpActions">
-    <button class="btn" id="prev" type="button">◀ Vorige</button>
-    <button class="btn" id="next" type="button">Volgende ▶</button>
-    <button class="btn btnPrimary" id="saveRound" type="button">Save / Update</button>
-    <button class="btn" id="addRound" type="button">Add ronde</button>
+    <button class="btn btnPrimary" id="saveRound" type="button">Save</button>
+    <button class="btn" id="addRound" type="button">Add</button>
     <button class="btn" id="deleteRound" type="button">Delete</button>
   </div>
 
@@ -558,18 +585,17 @@ textarea.tp{min-height:66px;resize:vertical}
       <button class="btn" id="exportDownload" type="button">Download als bestand</button>
       <button class="btn" id="importShow" type="button">Importeer rondes</button>
     </div>
-    <div class="smallHint">Exporteer je rondes om te delen met andere docenten, of importeer rondes van collega's.</div>
     
     <div class="importArea" id="importArea">
-      <label>Plak hier de geëxporteerde data of kies een bestand:</label>
-      <div style="display:flex;gap:8px;margin-bottom:8px">
+      <label>Plak data of kies bestand:</label>
+      <div style="margin-bottom:8px">
         <button class="btn" id="importFileBtn" type="button">Kies bestand</button>
         <input type="file" id="importFileInput" accept=".json,.txt">
       </div>
-      <textarea id="importData" placeholder='Plak hier de JSON data (begint met [{"videoId":...}])...'></textarea>
+      <textarea id="importData" placeholder='Plak JSON data...'></textarea>
       <div class="importActions">
-        <button class="btn btnPrimary" id="importReplace" type="button">Vervang alle rondes</button>
-        <button class="btn btnPrimary" id="importAdd" type="button">Voeg toe aan bestaande</button>
+        <button class="btn btnPrimary" id="importReplace" type="button">Vervang</button>
+        <button class="btn btnPrimary" id="importAdd" type="button">Toevoegen</button>
         <button class="btn" id="importCancel" type="button">Annuleer</button>
       </div>
     </div>
@@ -1107,6 +1133,7 @@ textarea.tp{min-height:66px;resize:vertical}
     const r = rounds[idx];
 
     el("roundInfo").textContent = `Ronde ${idx+1}/${rounds.length}`;
+    el("tpRoundInfo").textContent = `${idx+1}/${rounds.length}`;
     setVideo(r.videoId || "");
 
     el("prev").disabled = (idx === 0);
