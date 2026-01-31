@@ -209,7 +209,7 @@ body{
   border-radius:14px;
   padding:10px;
   display:grid;
-  grid-template-rows:auto 1fr;
+  grid-template-rows:auto auto 1fr;
   gap:8px;
   min-height:0;
   background:#fff;
@@ -226,6 +226,20 @@ body{
   border:1px solid rgba(0,0,0,.06);
   border-radius:12px;
   min-height:46px;
+}
+
+.buzzHint{
+  text-align:center;
+  font-size:13px;
+  font-weight:700;
+  color:#666;
+  padding:6px;
+  background:#f5f5f5;
+  border-radius:8px;
+  transition: opacity .2s;
+}
+.buzzHint.hidden{
+  opacity:0;
 }
 
 .answers{
@@ -433,6 +447,7 @@ textarea.tp{min-height:66px;resize:vertical}
 
     <div class="qa">
       <div class="question" id="question">—</div>
+      <div class="buzzHint" id="buzzHint">Druk A (links) of L (rechts) om te buzzen!</div>
       <div class="answers">
         <div class="col" id="colLeft"></div>
         <div class="col" id="colRight"></div>
@@ -622,8 +637,7 @@ textarea.tp{min-height:66px;resize:vertical}
 
   // --- Turn logic ---
   let idx = 0;
-  let startTeam = "A";
-  let attemptTeam = "A";
+  let buzzedTeam = null; // null = waiting for buzz, "A" or "B" = team that buzzed
   let answered = false;
 
   function setActiveTeam(t){
@@ -645,8 +659,11 @@ textarea.tp{min-height:66px;resize:vertical}
       d.textContent = `${letters[n]}: ${(r.a && r.a[n]) ? r.a[n] : "—"}`;
       d.addEventListener("click", ()=>choose(n));
 
-      if(answered){
+      // Disable if no one buzzed yet or already answered
+      if(!buzzedTeam || answered){
         d.classList.add("disabled");
+      }
+      if(answered){
         if(n === r.c) d.classList.add("correct");
         if(feedbackIndex !== null && n === feedbackIndex && n !== r.c) d.classList.add("wrong");
       }
@@ -661,9 +678,18 @@ textarea.tp{min-height:66px;resize:vertical}
 
   function resetRoundUI(){
     answered = false;
-    startTeam = (idx % 2 === 0) ? "A" : "B";
-    attemptTeam = startTeam;
-    setActiveTeam(attemptTeam);
+    buzzedTeam = null;
+    setActiveTeam(null);
+    el("buzzHint").classList.remove("hidden");
+    renderAnswers();
+    el("question").textContent = rounds[idx].q || "—";
+  }
+
+  function buzzIn(team){
+    if(buzzedTeam || answered) return; // Already buzzed or answered
+    buzzedTeam = team;
+    setActiveTeam(team);
+    el("buzzHint").classList.add("hidden");
     renderAnswers();
   }
 
@@ -1029,7 +1055,6 @@ textarea.tp{min-height:66px;resize:vertical}
     const r = rounds[idx];
 
     el("roundInfo").textContent = `Ronde ${idx+1}/${rounds.length}`;
-    el("question").textContent = r.q || "—";
     setVideo(r.videoId || "");
 
     el("prev").disabled = (idx === 0);
@@ -1047,7 +1072,7 @@ textarea.tp{min-height:66px;resize:vertical}
   }
 
   function choose(n){
-    if(answered) return;
+    if(!buzzedTeam || answered) return;
 
     const r = rounds[idx];
     answered = true;
@@ -1055,23 +1080,14 @@ textarea.tp{min-height:66px;resize:vertical}
     renderAnswers(n);
 
     if(correct){
-      awardPoint(attemptTeam);
-      setTimeout(nextAuto, 900);
-      return;
+      awardPoint(buzzedTeam);
+    } else {
+      // Wrong answer - opponent gets the point
+      const opponent = (buzzedTeam === "A") ? "B" : "A";
+      awardPoint(opponent);
     }
-
-    const opp = (attemptTeam==="A") ? "B" : "A";
-    if(attemptTeam === startTeam){
-      attemptTeam = opp;
-      setActiveTeam(attemptTeam);
-      setTimeout(() => {
-        answered = false;
-        renderAnswers(null);
-      }, 550);
-      return;
-    }
-
-    setTimeout(nextAuto, 800);
+    
+    setTimeout(nextAuto, 900);
   }
 
   function nextAuto(){
@@ -1094,11 +1110,23 @@ textarea.tp{min-height:66px;resize:vertical}
   });
 
   window.addEventListener("keydown", (e)=>{
-    if(answered) return;
-    if(e.key==="1") choose(0);
-    if(e.key==="2") choose(1);
-    if(e.key==="3") choose(2);
-    if(e.key==="4") choose(3);
+    // A key = Team A (left) buzzes in
+    if(e.key.toLowerCase()==="a" && !e.ctrlKey && !e.metaKey){
+      buzzIn("A");
+      return;
+    }
+    // L key = Team B (right) buzzes in
+    if(e.key.toLowerCase()==="l"){
+      buzzIn("B");
+      return;
+    }
+    // 1-4 to select answer (only after buzz)
+    if(buzzedTeam && !answered){
+      if(e.key==="1") choose(0);
+      if(e.key==="2") choose(1);
+      if(e.key==="3") choose(2);
+      if(e.key==="4") choose(3);
+    }
     if(e.key.toLowerCase()==="x") stopVideo();
     if(e.key.toLowerCase()==="p") playVideo();
   });
