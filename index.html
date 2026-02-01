@@ -533,7 +533,7 @@ textarea.tp{min-height:66px;resize:vertical}
     <div class="bottomControls">
       <div id="roundInfo">Ronde 1/1</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn" id="resetScore" type="button">Reset score</button>
+        <button class="btn" id="resetScore" type="button">Reset spel</button>
       </div>
     </div>
   </div>
@@ -1245,13 +1245,20 @@ textarea.tp{min-height:66px;resize:vertical}
   });
 
   el("resetScore").addEventListener("click", ()=>{
+    if(!confirm("Spel volledig resetten?")) return;
     scoreA = 0; scoreB = 0;
     el("scoreA").textContent = "0";
     el("scoreB").textContent = "0";
     localStorage.setItem(SCORE_KEY, JSON.stringify({a:scoreA, b:scoreB}));
+    idx = 0;
+    loadRound();
   });
 
   window.addEventListener("keydown", (e)=>{
+    // Ignore if typing in input or textarea
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    if(tag === "input" || tag === "textarea") return;
+    
     // A key = Team A (left) buzzes in
     if(e.key.toLowerCase()==="a" && !e.ctrlKey && !e.metaKey){
       buzzIn("A");
