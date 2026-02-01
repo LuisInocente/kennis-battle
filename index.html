@@ -339,7 +339,7 @@ body{
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:12px;
+  gap:8px;
   margin-bottom:12px;
   padding:8px;
   background:#f5f5f5;
@@ -350,6 +350,13 @@ body{
   font-size:14px;
   min-width:40px;
   text-align:center;
+}
+.tpNavSpacer{
+  flex:1;
+}
+.btnSmall{
+  padding:6px 10px;
+  font-size:12px;
 }
 
 label{display:block;font-size:11px;font-weight:900;color:var(--muted);margin:7px 0 5px}
@@ -546,6 +553,9 @@ textarea.tp{min-height:66px;resize:vertical}
     <button class="btn" id="prev" type="button">◀</button>
     <span class="tpRoundInfo" id="tpRoundInfo">1/1</span>
     <button class="btn" id="next" type="button">▶</button>
+    <span class="tpNavSpacer"></span>
+    <button class="btn btnSmall" id="moveUp" type="button" title="Omhoog">↑</button>
+    <button class="btn btnSmall" id="moveDown" type="button" title="Omlaag">↓</button>
   </div>
 
   <div class="tpGrid">
@@ -1138,6 +1148,8 @@ textarea.tp{min-height:66px;resize:vertical}
 
     el("prev").disabled = (idx === 0);
     el("next").disabled = (idx === rounds.length - 1);
+    el("moveUp").disabled = (idx === 0);
+    el("moveDown").disabled = (idx === rounds.length - 1);
 
     writeTeacher(r);
     resetRoundUI();
@@ -1211,6 +1223,26 @@ textarea.tp{min-height:66px;resize:vertical}
 
   el("prev").addEventListener("click", ()=>{ idx = Math.max(0, idx-1); loadRound(); });
   el("next").addEventListener("click", ()=>{ idx = Math.min(rounds.length-1, idx+1); loadRound(); });
+
+  el("moveUp").addEventListener("click", ()=>{
+    if(!teacherUnlocked || idx <= 0) return;
+    const temp = rounds[idx];
+    rounds[idx] = rounds[idx-1];
+    rounds[idx-1] = temp;
+    idx--;
+    persistRounds();
+    loadRound();
+  });
+
+  el("moveDown").addEventListener("click", ()=>{
+    if(!teacherUnlocked || idx >= rounds.length-1) return;
+    const temp = rounds[idx];
+    rounds[idx] = rounds[idx+1];
+    rounds[idx+1] = temp;
+    idx++;
+    persistRounds();
+    loadRound();
+  });
 
   el("resetScore").addEventListener("click", ()=>{
     scoreA = 0; scoreB = 0;
