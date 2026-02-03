@@ -531,6 +531,7 @@ textarea.tp{min-height:66px;resize:vertical}
       </div>
 
       <div class="videoControls">
+        <button class="ctrlBtn" id="nextQuestion" type="button">Volgende →</button>
         <button class="ctrlBtn primary" id="btnPlay" type="button">Play</button>
         <button class="ctrlBtn" id="btnStop" type="button" disabled>Stop</button>
       </div>
@@ -1396,6 +1397,7 @@ textarea.tp{min-height:66px;resize:vertical}
 
     el("prev").disabled = (idx === 0);
     el("next").disabled = (idx === rounds.length - 1);
+    el("nextQuestion").disabled = (idx === rounds.length - 1);
     el("moveUp").disabled = (idx === rounds.length - 1);
     el("moveDown").disabled = (idx === 0);
 
@@ -1488,6 +1490,13 @@ textarea.tp{min-height:66px;resize:vertical}
     idx--;
     persistRounds();
     loadRound();
+  });
+
+  el("nextQuestion").addEventListener("click", ()=>{
+    if(idx < rounds.length - 1){
+      idx++;
+      loadRound();
+    }
   });
 
   el("resetScore").addEventListener("click", ()=>{
