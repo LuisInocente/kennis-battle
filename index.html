@@ -222,21 +222,6 @@ body{
 .ctrlBtn.primary{ background:#111; color:#fff; border-color:transparent}
 .ctrlBtn:disabled{ opacity:.45; cursor:not-allowed; }
 
-.videoSourceBadge{
-  font-size:11px;
-  font-weight:700;
-  padding:4px 8px;
-  border-radius:8px;
-  background:#f3f4f6;
-  color:#6b7280;
-  text-transform:uppercase;
-  letter-spacing:.5px;
-}
-.videoSourceBadge.youtube{ background:#fee2e2; color:#dc2626; }
-.videoSourceBadge.vimeo{ background:#dbeafe; color:#2563eb; }
-.videoSourceBadge.direct{ background:#dcfce7; color:#16a34a; }
-.videoSourceBadge.embed{ background:#fef3c7; color:#d97706; }
-
 .qa{
   border:1px solid var(--border);
   border-radius:14px;
@@ -548,7 +533,6 @@ textarea.tp{min-height:66px;resize:vertical}
       <div class="videoControls">
         <button class="ctrlBtn primary" id="btnPlay" type="button">Play</button>
         <button class="ctrlBtn" id="btnStop" type="button" disabled>Stop</button>
-        <span class="videoSourceBadge" id="videoSourceBadge">—</span>
       </div>
     </div>
 
@@ -733,26 +717,6 @@ textarea.tp{min-height:66px;resize:vertical}
     return { type: VideoType.NONE, id: '', url: '' };
   }
 
-  function getSourceBadgeClass(type) {
-    switch(type) {
-      case VideoType.YOUTUBE: return 'youtube';
-      case VideoType.VIMEO: return 'vimeo';
-      case VideoType.DIRECT: return 'direct';
-      case VideoType.EMBED: return 'embed';
-      default: return '';
-    }
-  }
-
-  function getSourceBadgeText(type) {
-    switch(type) {
-      case VideoType.YOUTUBE: return 'YouTube';
-      case VideoType.VIMEO: return 'Vimeo';
-      case VideoType.DIRECT: return 'Video';
-      case VideoType.EMBED: return 'Embed';
-      default: return '—';
-    }
-  }
-
   // -------------------------
   // save pill
   // -------------------------
@@ -922,12 +886,6 @@ textarea.tp{min-height:66px;resize:vertical}
   function setStopEnabled(on){ el("btnStop").disabled = !on; }
   function setOverlayText(){ el("playText").textContent = isPaused ? "Verder kijken" : "Start video"; }
 
-  function updateSourceBadge(type) {
-    const badge = el("videoSourceBadge");
-    badge.className = "videoSourceBadge " + getSourceBadgeClass(type);
-    badge.textContent = getSourceBadgeText(type);
-  }
-
   function loadYTApi(){
     return new Promise((resolve) => {
       if(ytReady && window.YT && window.YT.Player) return resolve();
@@ -1063,7 +1021,6 @@ textarea.tp{min-height:66px;resize:vertical}
     
     const source = detectVideoSource(videoUrl);
     currentVideoSource = source;
-    updateSourceBadge(source.type);
     
     if (source.type === VideoType.NONE) {
       el("playerHost").innerHTML =
