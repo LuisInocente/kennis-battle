@@ -1429,8 +1429,6 @@ textarea.tp{min-height:66px;resize:vertical}
     
     if(idx >= rounds.length - 1){
       setTimeout(showWinner, 1000);
-    } else {
-      setTimeout(nextAuto, 900);
     }
   }
 
@@ -1459,15 +1457,6 @@ textarea.tp{min-height:66px;resize:vertical}
   el("closeWinner").addEventListener("click", () => {
     el("winnerModal").classList.remove("show");
   });
-
-  function nextAuto(){
-    if(idx < rounds.length - 1){
-      idx++;
-      loadRound();
-    }else{
-      loadRound();
-    }
-  }
 
   el("prev").addEventListener("click", ()=>{ idx = Math.max(0, idx-1); loadRound(); });
   el("next").addEventListener("click", ()=>{ idx = Math.min(rounds.length-1, idx+1); loadRound(); });
