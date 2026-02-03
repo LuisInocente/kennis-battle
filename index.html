@@ -164,12 +164,15 @@ body{
   position:relative;
 }
 #playerHost{ position:absolute; inset:0; }
-.videoBox iframe{
+.videoBox iframe, .videoBox video{
   width:100%;
   height:100%;
   border:0;
   display:block;
   pointer-events:none;
+}
+.videoBox video.interactive{
+  pointer-events:auto;
 }
 
 .playOverlay{
@@ -218,6 +221,21 @@ body{
 }
 .ctrlBtn.primary{ background:#111; color:#fff; border-color:transparent}
 .ctrlBtn:disabled{ opacity:.45; cursor:not-allowed; }
+
+.videoSourceBadge{
+  font-size:11px;
+  font-weight:700;
+  padding:4px 8px;
+  border-radius:8px;
+  background:#f3f4f6;
+  color:#6b7280;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+}
+.videoSourceBadge.youtube{ background:#fee2e2; color:#dc2626; }
+.videoSourceBadge.vimeo{ background:#dbeafe; color:#2563eb; }
+.videoSourceBadge.direct{ background:#dcfce7; color:#16a34a; }
+.videoSourceBadge.embed{ background:#fef3c7; color:#d97706; }
 
 .qa{
   border:1px solid var(--border);
@@ -300,7 +318,7 @@ body{
   right:10px;
   top:50px;
   bottom:10px;
-  width:320px;
+  width:340px;
   max-height:calc(100vh - 60px);
   overflow-y:auto;
   background:#fff;
@@ -376,6 +394,17 @@ textarea.tp{min-height:66px;resize:vertical}
 .tpActions .btn{flex:1;min-width:80px;text-align:center}
 .btnPrimary{ background:#111; color:#fff; border-color:transparent; }
 .smallHint{font-size:11px;color:var(--muted);margin-top:6px}
+
+.videoHint{
+  font-size:11px;
+  color:var(--muted);
+  margin-top:4px;
+  line-height:1.4;
+  background:#f8fafc;
+  padding:8px 10px;
+  border-radius:8px;
+}
+.videoHint strong{ color:#111; }
 
 /* Export/Import section */
 .exportSection{
@@ -519,6 +548,7 @@ textarea.tp{min-height:66px;resize:vertical}
       <div class="videoControls">
         <button class="ctrlBtn primary" id="btnPlay" type="button">Play</button>
         <button class="ctrlBtn" id="btnStop" type="button" disabled>Stop</button>
+        <span class="videoSourceBadge" id="videoSourceBadge">—</span>
       </div>
     </div>
 
@@ -560,8 +590,15 @@ textarea.tp{min-height:66px;resize:vertical}
 
   <div class="tpGrid">
     <div>
-      <label>YouTube link of ID</label>
-      <input class="tp" id="tpVideo" placeholder="https://youtu.be/QV4tivE8vYo (of: QV4tivE8vYo)">
+      <label>Video URL</label>
+      <input class="tp" id="tpVideo" placeholder="YouTube, Vimeo, MP4, of embed URL">
+      <div class="videoHint">
+        <strong>Ondersteund:</strong><br>
+        • YouTube: youtu.be/xxx of youtube.com/watch?v=xxx<br>
+        • Vimeo: vimeo.com/123456789<br>
+        • Direct: .mp4, .webm, .ogg bestanden<br>
+        • Embed: elke iframe embed URL
+      </div>
     </div>
 
     <div>
@@ -631,12 +668,90 @@ textarea.tp{min-height:66px;resize:vertical}
   const TEACHER_PASSWORD = "muziek"; // 👈 verander dit
   let teacherUnlocked = false;
 
-  const STORAGE = "kennis_battle_rounds_v8";
-  const SCORE_KEY = "kennis_battle_scores_v8";
-  const NAMES_KEY = "kennis_battle_names_v8";
+  const STORAGE = "kennis_battle_rounds_v9";
+  const SCORE_KEY = "kennis_battle_scores_v9";
+  const NAMES_KEY = "kennis_battle_names_v9";
 
   const el = id => document.getElementById(id);
   const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
+
+  // =========================
+  // VIDEO SOURCE DETECTION
+  // =========================
+  const VideoType = {
+    YOUTUBE: 'youtube',
+    VIMEO: 'vimeo',
+    DIRECT: 'direct',
+    EMBED: 'embed',
+    NONE: 'none'
+  };
+
+  function detectVideoSource(url) {
+    if (!url || typeof url !== 'string') {
+      return { type: VideoType.NONE, id: '', url: '' };
+    }
+    
+    url = url.trim();
+    
+    // YouTube detection
+    const ytPatterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/,
+      /^([\w-]{11})$/ // Just the ID
+    ];
+    
+    for (const pattern of ytPatterns) {
+      const match = url.match(pattern);
+      if (match) {
+        return { type: VideoType.YOUTUBE, id: match[1], url: url };
+      }
+    }
+    
+    // Vimeo detection
+    const vimeoPatterns = [
+      /vimeo\.com\/(\d+)/,
+      /player\.vimeo\.com\/video\/(\d+)/
+    ];
+    
+    for (const pattern of vimeoPatterns) {
+      const match = url.match(pattern);
+      if (match) {
+        return { type: VideoType.VIMEO, id: match[1], url: url };
+      }
+    }
+    
+    // Direct video file detection
+    const videoExtensions = /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i;
+    if (videoExtensions.test(url)) {
+      return { type: VideoType.DIRECT, id: '', url: url };
+    }
+    
+    // Generic embed URL (anything with http/https that's not caught above)
+    if (/^https?:\/\//i.test(url)) {
+      return { type: VideoType.EMBED, id: '', url: url };
+    }
+    
+    return { type: VideoType.NONE, id: '', url: '' };
+  }
+
+  function getSourceBadgeClass(type) {
+    switch(type) {
+      case VideoType.YOUTUBE: return 'youtube';
+      case VideoType.VIMEO: return 'vimeo';
+      case VideoType.DIRECT: return 'direct';
+      case VideoType.EMBED: return 'embed';
+      default: return '';
+    }
+  }
+
+  function getSourceBadgeText(type) {
+    switch(type) {
+      case VideoType.YOUTUBE: return 'YouTube';
+      case VideoType.VIMEO: return 'Vimeo';
+      case VideoType.DIRECT: return 'Video';
+      case VideoType.EMBED: return 'Embed';
+      default: return '—';
+    }
+  }
 
   // -------------------------
   // save pill
@@ -671,15 +786,9 @@ textarea.tp{min-height:66px;resize:vertical}
   el("tpClose").addEventListener("click", () => el("teacherPanel").classList.remove("open"));
 
   // --- Helpers ---
-  function ytId(v){
-    if(!v) return "";
-    v = String(v).trim();
-    if(/^[\w-]{6,}$/.test(v) && !v.includes("http")) return v;
-    const m = v.match(/[?&]v=([\w-]+)/) || v.match(/youtu\.be\/([\w-]+)/) || v.match(/youtube\.com\/embed\/([\w-]+)/);
-    return m ? m[1] : "";
-  }
   function isValidRound(r){
-    if(!r.videoId) return false;
+    const source = detectVideoSource(r.videoUrl || r.videoId);
+    if(source.type === VideoType.NONE) return false;
     if(!r.q) return false;
     if(!Array.isArray(r.a) || r.a.filter(Boolean).length < 2) return false;
     return true;
@@ -695,12 +804,32 @@ textarea.tp{min-height:66px;resize:vertical}
   el("nameAInput").addEventListener("input", saveNames);
   el("nameBInput").addEventListener("input", saveNames);
 
+  // --- Migrate old rounds format ---
+  function migrateRound(r) {
+    // If round has old videoId format, convert to videoUrl
+    if (r.videoId && !r.videoUrl) {
+      const source = detectVideoSource(r.videoId);
+      if (source.type === VideoType.YOUTUBE) {
+        r.videoUrl = `https://youtu.be/${source.id}`;
+      } else {
+        r.videoUrl = r.videoId;
+      }
+    }
+    return r;
+  }
+
   // --- Load rounds ---
   let rounds;
-  try{ rounds = JSON.parse(localStorage.getItem(STORAGE)); }catch(_){ rounds=null; }
+  try{ 
+    rounds = JSON.parse(localStorage.getItem(STORAGE)); 
+    if (Array.isArray(rounds)) {
+      rounds = rounds.map(migrateRound);
+    }
+  }catch(_){ rounds=null; }
+  
   if(!Array.isArray(rounds) || !rounds.length){
     rounds = [{
-      videoId:"QV4tivE8vYo",
+      videoUrl:"https://youtu.be/QV4tivE8vYo",
       q:"Welk instrument hoor je?",
       a:["Trompet","Trombone","Hoorn","Tuba"],
       c:0
@@ -727,7 +856,7 @@ textarea.tp{min-height:66px;resize:vertical}
 
   // --- Turn logic ---
   let idx = 0;
-  let buzzedTeam = null; // null = waiting for buzz, "A" or "B" = team that buzzed
+  let buzzedTeam = null;
   let answered = false;
 
   function setActiveTeam(t){
@@ -749,7 +878,6 @@ textarea.tp{min-height:66px;resize:vertical}
       d.textContent = `${letters[n]}: ${(r.a && r.a[n]) ? r.a[n] : "—"}`;
       d.addEventListener("click", ()=>choose(n));
 
-      // Disable if no one buzzed yet or already answered
       if(!buzzedTeam || answered){
         d.classList.add("disabled");
       }
@@ -760,10 +888,10 @@ textarea.tp{min-height:66px;resize:vertical}
       return d;
     }
 
-    colL.appendChild(makeBtn(0)); // A
-    colL.appendChild(makeBtn(2)); // C
-    colR.appendChild(makeBtn(1)); // B
-    colR.appendChild(makeBtn(3)); // D
+    colL.appendChild(makeBtn(0));
+    colL.appendChild(makeBtn(2));
+    colR.appendChild(makeBtn(1));
+    colR.appendChild(makeBtn(3));
   }
 
   function resetRoundUI(){
@@ -775,21 +903,30 @@ textarea.tp{min-height:66px;resize:vertical}
   }
 
   function buzzIn(team){
-    if(buzzedTeam || answered) return; // Already buzzed or answered
+    if(buzzedTeam || answered) return;
     buzzedTeam = team;
     setActiveTeam(team);
     renderAnswers();
   }
 
-  // --- YouTube API ---
+  // =========================
+  // MULTI-SOURCE VIDEO PLAYER
+  // =========================
   let ytReady = false;
-  let player = null;
-  let playerIsReady = false;
-  let currentVideoId = "";
+  let ytPlayer = null;
+  let ytPlayerIsReady = false;
+  let htmlVideoEl = null;
+  let currentVideoSource = { type: VideoType.NONE, id: '', url: '' };
   let isPaused = false;
 
   function setStopEnabled(on){ el("btnStop").disabled = !on; }
   function setOverlayText(){ el("playText").textContent = isPaused ? "Verder kijken" : "Start video"; }
+
+  function updateSourceBadge(type) {
+    const badge = el("videoSourceBadge");
+    badge.className = "videoSourceBadge " + getSourceBadgeClass(type);
+    badge.textContent = getSourceBadgeText(type);
+  }
 
   function loadYTApi(){
     return new Promise((resolve) => {
@@ -801,82 +938,237 @@ textarea.tp{min-height:66px;resize:vertical}
     });
   }
 
-  async function ensurePlayer(videoId){
-    await loadYTApi();
-    if(player && currentVideoId === videoId) return;
-
-    if(player && player.destroy){
-      try{ player.destroy(); }catch(_){}
+  function clearPlayer() {
+    // Clear YouTube player
+    if (ytPlayer && ytPlayer.destroy) {
+      try { ytPlayer.destroy(); } catch(_) {}
+      ytPlayer = null;
+      ytPlayerIsReady = false;
     }
+    // Clear HTML video
+    if (htmlVideoEl) {
+      htmlVideoEl.pause();
+      htmlVideoEl.remove();
+      htmlVideoEl = null;
+    }
+    // Clear any iframes or content
+    el("playerHost").innerHTML = "";
+  }
 
-    currentVideoId = videoId;
-    playerIsReady = false;
-    setStopEnabled(false);
-    isPaused = false;
-    setOverlayText();
-
-    player = new YT.Player("playerHost", {
-      videoId,
-      playerVars: {
-        controls: 0,
-        fs: 0,
-        rel: 0,
-        modestbranding: 1,
-        iv_load_policy: 3,
-        disablekb: 1,
-        playsinline: 1,
-        autoplay: 0
-      },
-      events: {
-        onReady: () => { playerIsReady = true; setStopEnabled(true); },
-        onStateChange: (e) => {
-          if(!window.YT) return;
-          if(e.data === YT.PlayerState.PAUSED){ isPaused = true; setOverlayText(); el("playOverlay").style.display = "grid"; }
-          if(e.data === YT.PlayerState.PLAYING){
-            isPaused = false; setOverlayText();
-            el("playOverlay").style.display = "none";
-          }
-          if(e.data === YT.PlayerState.ENDED){
-            isPaused = false; setOverlayText();
-            el("playOverlay").style.display = "grid";
+  async function createYouTubePlayer(videoId) {
+    await loadYTApi();
+    
+    return new Promise((resolve) => {
+      ytPlayer = new YT.Player("playerHost", {
+        videoId,
+        playerVars: {
+          controls: 0,
+          fs: 0,
+          rel: 0,
+          modestbranding: 1,
+          iv_load_policy: 3,
+          disablekb: 1,
+          playsinline: 1,
+          autoplay: 0
+        },
+        events: {
+          onReady: () => { 
+            ytPlayerIsReady = true; 
+            setStopEnabled(true);
+            resolve();
+          },
+          onStateChange: (e) => {
+            if(!window.YT) return;
+            if(e.data === YT.PlayerState.PAUSED){ 
+              isPaused = true; 
+              setOverlayText(); 
+              el("playOverlay").style.display = "grid"; 
+            }
+            if(e.data === YT.PlayerState.PLAYING){
+              isPaused = false; 
+              setOverlayText();
+              el("playOverlay").style.display = "none";
+            }
+            if(e.data === YT.PlayerState.ENDED){
+              isPaused = false; 
+              setOverlayText();
+              el("playOverlay").style.display = "grid";
+            }
           }
         }
-      }
+      });
     });
   }
 
-  async function setVideo(videoId){
+  function createVimeoPlayer(videoId) {
+    const iframe = document.createElement("iframe");
+    iframe.src = `https://player.vimeo.com/video/${videoId}?autoplay=0&title=0&byline=0&portrait=0`;
+    iframe.allow = "autoplay; fullscreen";
+    iframe.style.cssText = "width:100%;height:100%;border:0;";
+    el("playerHost").appendChild(iframe);
+    setStopEnabled(true);
+    return iframe;
+  }
+
+  function createDirectVideoPlayer(url) {
+    const video = document.createElement("video");
+    video.src = url;
+    video.preload = "metadata";
+    video.style.cssText = "width:100%;height:100%;object-fit:contain;";
+    
+    video.addEventListener("play", () => {
+      isPaused = false;
+      setOverlayText();
+      el("playOverlay").style.display = "none";
+    });
+    
+    video.addEventListener("pause", () => {
+      isPaused = true;
+      setOverlayText();
+      el("playOverlay").style.display = "grid";
+    });
+    
+    video.addEventListener("ended", () => {
+      isPaused = false;
+      setOverlayText();
+      el("playOverlay").style.display = "grid";
+    });
+    
+    video.addEventListener("loadedmetadata", () => {
+      setStopEnabled(true);
+    });
+    
+    el("playerHost").appendChild(video);
+    htmlVideoEl = video;
+    return video;
+  }
+
+  function createEmbedPlayer(url) {
+    const iframe = document.createElement("iframe");
+    iframe.src = url;
+    iframe.allow = "autoplay; fullscreen; encrypted-media";
+    iframe.style.cssText = "width:100%;height:100%;border:0;";
+    el("playerHost").appendChild(iframe);
+    setStopEnabled(true);
+    return iframe;
+  }
+
+  async function setVideo(videoUrl) {
     el("playOverlay").style.display = "grid";
     isPaused = false;
     setOverlayText();
-
-    el("playerHost").innerHTML = "";
-    if(!videoId){
+    setStopEnabled(false);
+    
+    clearPlayer();
+    
+    const source = detectVideoSource(videoUrl);
+    currentVideoSource = source;
+    updateSourceBadge(source.type);
+    
+    if (source.type === VideoType.NONE) {
       el("playerHost").innerHTML =
         `<div style="color:#fff;display:grid;place-items:center;width:100%;height:100%;font-weight:950;opacity:.9">Geen video</div>`;
-      setStopEnabled(false);
       return;
     }
-    await ensurePlayer(videoId);
+    
+    switch (source.type) {
+      case VideoType.YOUTUBE:
+        await createYouTubePlayer(source.id);
+        break;
+      case VideoType.VIMEO:
+        createVimeoPlayer(source.id);
+        break;
+      case VideoType.DIRECT:
+        createDirectVideoPlayer(source.url);
+        break;
+      case VideoType.EMBED:
+        createEmbedPlayer(source.url);
+        break;
+    }
   }
 
-  async function playVideo(){
-    const id = rounds[idx]?.videoId || "";
-    if(!id) return;
-    await ensurePlayer(id);
-    try{
-      player.playVideo();
-      el("playOverlay").style.display = "none";
-      setStopEnabled(true);
-    }catch(_){}
+  async function playVideo() {
+    const r = rounds[idx];
+    const videoUrl = r.videoUrl || r.videoId || "";
+    if (!videoUrl) return;
+    
+    const source = detectVideoSource(videoUrl);
+    
+    // Ensure correct player is loaded
+    if (source.type !== currentVideoSource.type || 
+        source.id !== currentVideoSource.id || 
+        source.url !== currentVideoSource.url) {
+      await setVideo(videoUrl);
+    }
+    
+    switch (source.type) {
+      case VideoType.YOUTUBE:
+        if (ytPlayer && ytPlayerIsReady) {
+          try {
+            ytPlayer.playVideo();
+            el("playOverlay").style.display = "none";
+          } catch(_) {}
+        }
+        break;
+        
+      case VideoType.VIMEO:
+        // Vimeo requires postMessage API - recreate with autoplay
+        clearPlayer();
+        const iframe = document.createElement("iframe");
+        iframe.src = `https://player.vimeo.com/video/${source.id}?autoplay=1&title=0&byline=0&portrait=0`;
+        iframe.allow = "autoplay; fullscreen";
+        iframe.style.cssText = "width:100%;height:100%;border:0;";
+        el("playerHost").appendChild(iframe);
+        el("playOverlay").style.display = "none";
+        break;
+        
+      case VideoType.DIRECT:
+        if (htmlVideoEl) {
+          htmlVideoEl.play();
+        }
+        break;
+        
+      case VideoType.EMBED:
+        // Can't control generic embeds - just hide overlay
+        el("playOverlay").style.display = "none";
+        break;
+    }
+    
+    setStopEnabled(true);
   }
 
-  function stopVideo(){
-    if(!player || !playerIsReady) return;
-    try{
-      player.pauseVideo();
-      player.seekTo(0, true);
-    }catch(_){}
+  function stopVideo() {
+    switch (currentVideoSource.type) {
+      case VideoType.YOUTUBE:
+        if (ytPlayer && ytPlayerIsReady) {
+          try {
+            ytPlayer.pauseVideo();
+            ytPlayer.seekTo(0, true);
+          } catch(_) {}
+        }
+        break;
+        
+      case VideoType.VIMEO:
+        // Recreate without autoplay
+        clearPlayer();
+        createVimeoPlayer(currentVideoSource.id);
+        break;
+        
+      case VideoType.DIRECT:
+        if (htmlVideoEl) {
+          htmlVideoEl.pause();
+          htmlVideoEl.currentTime = 0;
+        }
+        break;
+        
+      case VideoType.EMBED:
+        // Reload iframe to reset
+        const url = currentVideoSource.url;
+        clearPlayer();
+        createEmbedPlayer(url);
+        break;
+    }
+    
     isPaused = false;
     setOverlayText();
     el("playOverlay").style.display = "grid";
@@ -893,7 +1185,7 @@ textarea.tp{min-height:66px;resize:vertical}
     const c = (cStr in map) ? map[cStr] : 0;
 
     return {
-      videoId: ytId(el("tpVideo").value),
+      videoUrl: String(el("tpVideo").value||"").trim(),
       q: String(el("tpQuestion").value||"").trim(),
       a: [
         String(el("tpA").value||"").trim(),
@@ -906,7 +1198,7 @@ textarea.tp{min-height:66px;resize:vertical}
   }
 
   function writeTeacher(r){
-    el("tpVideo").value = r.videoId || "";
+    el("tpVideo").value = r.videoUrl || r.videoId || "";
     el("tpQuestion").value = r.q || "";
     el("tpA").value = r.a?.[0] || "";
     el("tpB").value = r.a?.[1] || "";
@@ -928,7 +1220,7 @@ textarea.tp{min-height:66px;resize:vertical}
       const r = readTeacher();
 
       rounds[idx] = {
-        videoId: r.videoId || rounds[idx].videoId || "",
+        videoUrl: r.videoUrl || rounds[idx].videoUrl || "",
         q: r.q || "",
         a: r.a || ["","","",""],
         c: clamp(r.c||0,0,3)
@@ -937,7 +1229,13 @@ textarea.tp{min-height:66px;resize:vertical}
 
       el("question").textContent = rounds[idx].q || "—";
       renderAnswers();
-      if(r.videoId && r.videoId !== currentVideoId) setVideo(r.videoId);
+      
+      const newSource = detectVideoSource(r.videoUrl);
+      if (r.videoUrl && (newSource.type !== currentVideoSource.type || 
+          newSource.id !== currentVideoSource.id || 
+          newSource.url !== currentVideoSource.url)) {
+        setVideo(r.videoUrl);
+      }
     }, 220);
     el("savePill").textContent = "Saving…";
   }
@@ -951,7 +1249,7 @@ textarea.tp{min-height:66px;resize:vertical}
     if(!teacherUnlocked) return;
     const r = readTeacher();
     if(!isValidRound(r)){
-      alert("Vul minimaal: video + vraag + minstens 2 antwoorden.");
+      alert("Vul minimaal: video URL + vraag + minstens 2 antwoorden.");
       return;
     }
     rounds[idx] = r;
@@ -963,7 +1261,7 @@ textarea.tp{min-height:66px;resize:vertical}
     if(!teacherUnlocked) return;
     const r = readTeacher();
     if(!isValidRound(r)){
-      alert("Vul minimaal: video + vraag + minstens 2 antwoorden.");
+      alert("Vul minimaal: video URL + vraag + minstens 2 antwoorden.");
       return;
     }
     rounds.push(r);
@@ -989,7 +1287,6 @@ textarea.tp{min-height:66px;resize:vertical}
   // EXPORT / IMPORT FUNCTIONS
   // ============================
   
-  // Export: Download as file
   el("exportDownload").addEventListener("click", () => {
     if(!teacherUnlocked) return;
     const data = JSON.stringify(rounds, null, 2);
@@ -1005,7 +1302,6 @@ textarea.tp{min-height:66px;resize:vertical}
     URL.revokeObjectURL(url);
   });
 
-  // Show/hide import area
   el("importShow").addEventListener("click", () => {
     el("importArea").classList.toggle("show");
   });
@@ -1015,7 +1311,6 @@ textarea.tp{min-height:66px;resize:vertical}
     el("importData").value = "";
   });
 
-  // File input handler
   el("importFileBtn").addEventListener("click", () => {
     el("importFileInput").click();
   });
@@ -1029,10 +1324,9 @@ textarea.tp{min-height:66px;resize:vertical}
       el("importData").value = ev.target.result;
     };
     reader.readAsText(file);
-    e.target.value = ""; // Reset for re-selecting same file
+    e.target.value = "";
   });
 
-  // Parse and validate import data
   function parseImportData(){
     const raw = el("importData").value.trim();
     if(!raw){
@@ -1053,7 +1347,6 @@ textarea.tp{min-height:66px;resize:vertical}
       return null;
     }
     
-    // Validate each round
     const validRounds = [];
     for(let i = 0; i < parsed.length; i++){
       const r = parsed[i];
@@ -1062,9 +1355,10 @@ textarea.tp{min-height:66px;resize:vertical}
         return null;
       }
       
-      // Normalize the round
+      // Normalize the round - support both old and new format
+      const videoUrl = r.videoUrl || r.videoId || r.video || "";
       const normalized = {
-        videoId: ytId(r.videoId || r.video || ""),
+        videoUrl: videoUrl,
         q: String(r.q || r.question || "").trim(),
         a: Array.isArray(r.a) ? r.a.map(x => String(x||"").trim()) : 
            Array.isArray(r.answers) ? r.answers.map(x => String(x||"").trim()) :
@@ -1073,12 +1367,11 @@ textarea.tp{min-height:66px;resize:vertical}
            typeof r.correct === "number" ? clamp(r.correct, 0, 3) : 0
       };
       
-      // Ensure 4 answers
       while(normalized.a.length < 4) normalized.a.push("");
       normalized.a = normalized.a.slice(0,4);
       
       if(!isValidRound(normalized)){
-        alert(`Ronde ${i+1} mist video, vraag of minimaal 2 antwoorden.`);
+        alert(`Ronde ${i+1} mist video URL, vraag of minimaal 2 antwoorden.`);
         return null;
       }
       
@@ -1093,7 +1386,6 @@ textarea.tp{min-height:66px;resize:vertical}
     return validRounds;
   }
 
-  // Import: Replace all rounds
   el("importReplace").addEventListener("click", () => {
     if(!teacherUnlocked) return;
     
@@ -1114,7 +1406,6 @@ textarea.tp{min-height:66px;resize:vertical}
     alert(`${newRounds.length} ronde(s) geïmporteerd!`);
   });
 
-  // Import: Add to existing rounds
   el("importAdd").addEventListener("click", () => {
     if(!teacherUnlocked) return;
     
@@ -1144,7 +1435,7 @@ textarea.tp{min-height:66px;resize:vertical}
 
     el("roundInfo").textContent = `Ronde ${idx+1}/${rounds.length}`;
     el("tpRoundInfo").textContent = `${idx+1}/${rounds.length}`;
-    setVideo(r.videoId || "");
+    setVideo(r.videoUrl || r.videoId || "");
 
     el("prev").disabled = (idx === 0);
     el("next").disabled = (idx === rounds.length - 1);
@@ -1173,12 +1464,10 @@ textarea.tp{min-height:66px;resize:vertical}
     if(correct){
       awardPoint(buzzedTeam);
     } else {
-      // Wrong answer - opponent gets the point
       const opponent = (buzzedTeam === "A") ? "B" : "A";
       awardPoint(opponent);
     }
     
-    // Check if last round
     if(idx >= rounds.length - 1){
       setTimeout(showWinner, 1000);
     } else {
@@ -1255,21 +1544,17 @@ textarea.tp{min-height:66px;resize:vertical}
   });
 
   window.addEventListener("keydown", (e)=>{
-    // Ignore if typing in input or textarea
     const tag = document.activeElement?.tagName?.toLowerCase();
     if(tag === "input" || tag === "textarea") return;
     
-    // A key = Team A (left) buzzes in
     if(e.key.toLowerCase()==="a" && !e.ctrlKey && !e.metaKey){
       buzzIn("A");
       return;
     }
-    // L key = Team B (right) buzzes in
     if(e.key.toLowerCase()==="l"){
       buzzIn("B");
       return;
     }
-    // 1-4 to select answer (only after buzz)
     if(buzzedTeam && !answered){
       if(e.key==="1") choose(0);
       if(e.key==="2") choose(1);
