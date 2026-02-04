@@ -467,6 +467,54 @@ textarea.tp{min-height:66px;resize:vertical}
 #importFileInput{
   display:none;
 }
+
+/* Password modal */
+.passwordModal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.5);
+  z-index:6000;
+  place-items:center;
+}
+.passwordModal.show{
+  display:grid;
+}
+.passwordBox{
+  background:#fff;
+  border-radius:16px;
+  padding:24px 32px;
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+  min-width:280px;
+}
+.passwordTitle{
+  font-size:16px;
+  font-weight:900;
+  margin-bottom:16px;
+}
+.passwordInput{
+  width:100%;
+  padding:12px 14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  font-size:16px;
+  text-align:center;
+  outline:none;
+  letter-spacing:4px;
+}
+.passwordInput:focus{
+  border-color:rgba(0,0,0,.3);
+}
+.passwordActions{
+  display:flex;
+  gap:8px;
+  margin-top:16px;
+  justify-content:center;
+}
+.passwordActions .btn{
+  flex:1;
+}
 </style>
 </head>
 
@@ -608,15 +656,15 @@ textarea.tp{min-height:66px;resize:vertical}
     </div>
   </div>
 
-  <!-- GitHub Section -->
+  <!-- Server Section -->
   <div class="exportSection">
     <div class="sectionTitle">
-      GitHub
+      Server
     </div>
     <div class="exportBtns">
-      <button class="btn" id="reloadGitHub" type="button">🔄 Herlaad van GitHub</button>
+      <button class="btn" id="reloadServer" type="button">🔄 Herlaad van server</button>
     </div>
-    <div class="smallHint" id="githubStatus">—</div>
+    <div class="smallHint" id="serverStatus">—</div>
   </div>
 </div>
 
@@ -631,6 +679,17 @@ textarea.tp{min-height:66px;resize:vertical}
   </div>
 </div>
 
+<div class="passwordModal" id="passwordModal">
+  <div class="passwordBox">
+    <div class="passwordTitle">Teacher wachtwoord</div>
+    <input type="password" class="passwordInput" id="passwordInput" placeholder="••••••" autocomplete="off">
+    <div class="passwordActions">
+      <button class="btn" id="passwordCancel" type="button">Annuleer</button>
+      <button class="btn btnPrimary" id="passwordSubmit" type="button">OK</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (() => {
   // =========================
@@ -638,9 +697,9 @@ textarea.tp{min-height:66px;resize:vertical}
   // =========================
   const TEACHER_PASSWORD = "muziek"; // 👈 verander dit
   
-  // 👇 GitHub raw URL voor vragen (zet je eigen URL hier)
-  // Format: https://raw.githubusercontent.com/USERNAME/REPO/main/questions.json
-  const GITHUB_URL = ""; // Laat leeg om alleen localStorage te gebruiken
+  // 👇 URL naar je vragen JSON bestand (elke server)
+  // Bijvoorbeeld: https://jouwsite.nl/questions.json
+  const QUESTIONS_URL = "https://github.com/LuisInocente/questions.json;
   
   let teacherUnlocked = false;
 
@@ -727,18 +786,46 @@ textarea.tp{min-height:66px;resize:vertical}
   }
 
   // --- Teacher toggle with password ---
-  el("teacherBtn").addEventListener("click", () => {
-    if(!teacherUnlocked){
-      const pw = prompt("Teacher wachtwoord:");
-      if(pw !== TEACHER_PASSWORD){
-        alert("Onjuist wachtwoord");
-        return;
-      }
+  function showPasswordModal() {
+    el("passwordModal").classList.add("show");
+    el("passwordInput").value = "";
+    el("passwordInput").focus();
+  }
+  
+  function hidePasswordModal() {
+    el("passwordModal").classList.remove("show");
+    el("passwordInput").value = "";
+  }
+  
+  function checkPassword() {
+    const pw = el("passwordInput").value;
+    if (pw === TEACHER_PASSWORD) {
       teacherUnlocked = true;
       setLockUI();
+      hidePasswordModal();
+      el("teacherPanel").classList.add("open");
+    } else {
+      alert("Onjuist wachtwoord");
+      el("passwordInput").value = "";
+      el("passwordInput").focus();
+    }
+  }
+  
+  el("teacherBtn").addEventListener("click", () => {
+    if(!teacherUnlocked){
+      showPasswordModal();
+      return;
     }
     el("teacherPanel").classList.toggle("open");
   });
+  
+  el("passwordSubmit").addEventListener("click", checkPassword);
+  el("passwordCancel").addEventListener("click", hidePasswordModal);
+  el("passwordInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") checkPassword();
+    if (e.key === "Escape") hidePasswordModal();
+  });
+  
   el("tpClose").addEventListener("click", () => el("teacherPanel").classList.remove("open"));
 
   // --- Helpers ---
@@ -774,21 +861,21 @@ textarea.tp{min-height:66px;resize:vertical}
     return r;
   }
 
-  // --- Load rounds from GitHub or localStorage ---
+  // --- Load rounds from server or localStorage ---
   let rounds = [];
   
-  async function fetchRoundsFromGitHub() {
-    if (!GITHUB_URL) return null;
+  async function fetchRoundsFromServer() {
+    if (!QUESTIONS_URL) return null;
     
     try {
-      const response = await fetch(GITHUB_URL, { cache: "no-store" });
+      const response = await fetch(QUESTIONS_URL, { cache: "no-store" });
       if (!response.ok) throw new Error("Fetch failed");
       const data = await response.json();
       if (Array.isArray(data) && data.length > 0) {
         return data.map(migrateRound);
       }
     } catch (e) {
-      console.warn("Could not load from GitHub:", e);
+      console.warn("Could not load from server:", e);
     }
     return null;
   }
@@ -813,12 +900,12 @@ textarea.tp{min-height:66px;resize:vertical}
   }
   
   async function initRounds() {
-    // Try GitHub first
-    const githubRounds = await fetchRoundsFromGitHub();
-    if (githubRounds) {
-      rounds = githubRounds;
+    // Try server first
+    const serverRounds = await fetchRoundsFromServer();
+    if (serverRounds) {
+      rounds = serverRounds;
       localStorage.setItem(STORAGE, JSON.stringify(rounds));
-      console.log("Loaded", rounds.length, "rounds from GitHub");
+      console.log("Loaded", rounds.length, "rounds from server");
       return;
     }
     
@@ -1401,41 +1488,41 @@ textarea.tp{min-height:66px;resize:vertical}
   });
 
   // ============================
-  // GITHUB RELOAD
+  // SERVER RELOAD
   // ============================
   
-  function updateGitHubStatus() {
-    const status = el("githubStatus");
-    if (!GITHUB_URL) {
-      status.textContent = "Geen GitHub URL ingesteld";
+  function updateServerStatus() {
+    const status = el("serverStatus");
+    if (!QUESTIONS_URL) {
+      status.textContent = "Geen URL ingesteld";
     } else {
-      status.textContent = "URL: " + GITHUB_URL.slice(0, 50) + (GITHUB_URL.length > 50 ? "..." : "");
+      status.textContent = "URL: " + QUESTIONS_URL.slice(0, 50) + (QUESTIONS_URL.length > 50 ? "..." : "");
     }
   }
   
-  el("reloadGitHub").addEventListener("click", async () => {
-    if (!GITHUB_URL) {
-      alert("Geen GitHub URL ingesteld. Pas GITHUB_URL aan in de code.");
+  el("reloadServer").addEventListener("click", async () => {
+    if (!QUESTIONS_URL) {
+      alert("Geen URL ingesteld. Pas QUESTIONS_URL aan in de code.");
       return;
     }
     
-    el("reloadGitHub").disabled = true;
-    el("reloadGitHub").textContent = "Laden...";
+    el("reloadServer").disabled = true;
+    el("reloadServer").textContent = "Laden...";
     
-    const githubRounds = await fetchRoundsFromGitHub();
+    const serverRounds = await fetchRoundsFromServer();
     
-    if (githubRounds) {
-      rounds = githubRounds;
+    if (serverRounds) {
+      rounds = serverRounds;
       localStorage.setItem(STORAGE, JSON.stringify(rounds));
       idx = 0;
       loadRound();
-      alert(`${rounds.length} ronde(s) geladen van GitHub!`);
+      alert(`${rounds.length} ronde(s) geladen van server!`);
     } else {
-      alert("Kon niet laden van GitHub. Controleer de URL en probeer opnieuw.");
+      alert("Kon niet laden van server. Controleer de URL en probeer opnieuw.");
     }
     
-    el("reloadGitHub").disabled = false;
-    el("reloadGitHub").textContent = "🔄 Herlaad van GitHub";
+    el("reloadServer").disabled = false;
+    el("reloadServer").textContent = "🔄 Herlaad van server";
   });
 
   // ============================
@@ -1563,7 +1650,7 @@ textarea.tp{min-height:66px;resize:vertical}
   async function init() {
     await initRounds();
     setLockUI();
-    updateGitHubStatus();
+    updateServerStatus();
     loadRound();
   }
   
