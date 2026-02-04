@@ -662,7 +662,8 @@ textarea.tp{min-height:66px;resize:vertical}
       Server
     </div>
     <div class="exportBtns">
-      <button class="btn" id="reloadServer" type="button">🔄 Herlaad van server</button>
+      <button class="btn btnPrimary" id="saveToServer" type="button">Opslaan op server</button>
+      <button class="btn" id="reloadServer" type="button">Herlaad van server</button>
     </div>
     <div class="smallHint" id="serverStatus">—</div>
   </div>
@@ -699,7 +700,11 @@ textarea.tp{min-height:66px;resize:vertical}
   
   // URL naar je vragen JSON bestand (elke server)
   // Bijvoorbeeld: https://jouwsite.nl/questions.json
-  const QUESTIONS_URL = "https://luisinocente.github.io/kennis-battle/questions.json";
+  const QUESTIONS_URL = "https://muziekmeesterluis.nl/questions.json";
+  
+  // URL naar save-questions.php script
+  // Bijvoorbeeld: https://jouwsite.nl/save-questions.php
+  const SAVE_URL = "https://muziekmeesterluis.nl/save-questions.php";
   
   let teacherUnlocked = false;
 
@@ -1500,6 +1505,44 @@ textarea.tp{min-height:66px;resize:vertical}
     }
   }
   
+  el("saveToServer").addEventListener("click", async () => {
+    if (!SAVE_URL) {
+      alert("Geen SAVE_URL ingesteld. Pas SAVE_URL aan in de code.");
+      return;
+    }
+    
+    if (!confirm(`${rounds.length} ronde(s) opslaan op de server?`)) {
+      return;
+    }
+    
+    el("saveToServer").disabled = true;
+    el("saveToServer").textContent = "Opslaan...";
+    
+    try {
+      const response = await fetch(SAVE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          password: TEACHER_PASSWORD,
+          questions: rounds
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        alert(result.message || "Opgeslagen!");
+      } else {
+        alert("Fout: " + (result.error || "Onbekende fout"));
+      }
+    } catch (e) {
+      alert("Kon niet verbinden met server: " + e.message);
+    }
+    
+    el("saveToServer").disabled = false;
+    el("saveToServer").textContent = "Opslaan op server";
+  });
+  
   el("reloadServer").addEventListener("click", async () => {
     if (!QUESTIONS_URL) {
       alert("Geen URL ingesteld. Pas QUESTIONS_URL aan in de code.");
@@ -1522,7 +1565,7 @@ textarea.tp{min-height:66px;resize:vertical}
     }
     
     el("reloadServer").disabled = false;
-    el("reloadServer").textContent = "🔄 Herlaad van server";
+    el("reloadServer").textContent = "Herlaad van server";
   });
 
   // ============================
@@ -1659,5 +1702,3 @@ textarea.tp{min-height:66px;resize:vertical}
 </script>
 </body>
 </html>
-
-
